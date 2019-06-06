@@ -9,5 +9,5 @@ def index(request):
     return render(request, 'main/index.html')
 
 
-def game(request, name='firstGameDemo'):
-    return render(request, f'main/{name}.html')
+def game(request, name='firstGame'):
+    return render(request, f'main/game.html', {"game_path": f"main/js/{name}.js"})

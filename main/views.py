@@ -8,3 +8,6 @@ from django.http import HttpResponse
 def index(request):
     return render(request, 'main/index.html')
 
+
+def game(request, name='firstGameDemo'):
+    return render(request, f'main/{name}.html')

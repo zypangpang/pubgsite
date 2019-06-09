@@ -1,19 +1,21 @@
 {% extends "./base.html" %}
-{% block title %}数据查询{% endblock %}
+
+{% block title %}伞兵作战模拟系统{% endblock %}
+
 {% block extra_head %}
     {% load static %}
     <script src="{% static "main/js/phaser.js" %}"></script>
 {% endblock %}
 
 {% block content %}
-
     <div class="container-fluid px-5" style="margin-top:80px;margin-bottom: 30px">
-    <div class="row my-2 mx-5" >
-        <div class="col-8 p-0 mx-1">
-            <div class="bg-danger embed-responsive embed-responsive-4by3">
-                <iframe class="embed-responsive-item" src="{% url 'main:game' 'firstGame' %}" allowfullscreen></iframe>
+        <div class="row my-2 mx-5" >
+            <div class="col p-0 mx-1">
+                <div class="bg-danger embed-responsive embed-responsive-4by3">
+                    <iframe class="embed-responsive-item" src="{% url 'main:game' 'game' %}" allowfullscreen></iframe>
+                </div>
             </div>
+            <!--<div class="col-3">hello world</div>-->
         </div>
-        <div class="col-3">hello world</div>
     </div>
 {% endblock %}

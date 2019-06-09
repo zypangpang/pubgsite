@@ -8,12 +8,10 @@
 
     {% load static %}
     <link type="text/css" href="{% static "main/css/bootstrap.min.css"%}" rel="stylesheet">
+    <link type="text/css" href="{% static "main/css/fontawesom-all.css" %}" rel="stylesheet">
 
     <script src="{% static "main/js/jquery-3.4.1.js" %}"></script>
-
     <script src="{% static "main/js/popper.min.js" %}"></script>
-    <!--<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">-->
-    <link type="text/css" href="{% static "main/css/fontawesom-all.css" %}" rel="stylesheet">
     <script src="{% static "main/js/bootstrap.min.js" %}"></script>
 
     <link type="text/css" rel="stylesheet" href="{% static "main/css/index.css" %}">
@@ -22,14 +20,11 @@
 
 </head>
 <body>
-<!--<nav class="navbar navbar-expand-md bg-white navbar-light my-4 px-3 py-0 ">-->
 <nav class="navbar navbar-expand-md bkg-white-color navbar-light px-3 py-0 fixed-top shadow">
     <!-- Brand -->
-    <!--[if !IE]><!-->
     <a class="navbar-brand" href="{% url 'main:index' %}">
         <h5 class="p-0 m-0">伞兵作战模拟系统</h5>
     </a>
-    <!--<![endif]-->
 
     <!-- Toggler/collapsibe Button -->
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">

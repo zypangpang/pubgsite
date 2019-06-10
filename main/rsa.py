@@ -39,6 +39,7 @@ def segment_decryption(secret, prk):
 def get_RSAKeyList(n, count):
     RSAKeyList = []
     prime_arr = prime.get_rand_prime_arr(n, 2*count)
+    e_arr = prime.get_rand_prime_arr(n>>3, count)
     for i in range(count):
         RSAKey = {}
         p = prime_arr[2*i]
@@ -47,7 +48,7 @@ def get_RSAKeyList(n, count):
             q = random.choice(prime_arr)
         n = p * q
         s = (p - 1) * (q - 1)
-        e = 65537
+        e = e_arr[i]
         d = prime.mod_inverse(e, s)
         print("p = ", p, ",q = ", q)
         print("n = ", n)
@@ -68,12 +69,12 @@ def check(from_id, to_id):
     pass
 
 if __name__ == '__main__':
-    '''
+
     start = time.time()
     RSAKey = get_RSAKeyList(1024, 10)[0]
     print((time.time()-start)/10)
-    '''
-    RSAKey = get_RSAKeyList(1024, 1)[0]
+
+    #RSAKey = get_RSAKeyList(1024, 1)[0]
     print("Enter the message: ")
     message = input()
     print("Message: ", message)

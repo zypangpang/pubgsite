@@ -5,6 +5,12 @@
     backgroundColor: '#42271a',
     //backgroundColor: '#244d1b',
     parent: 'phaser-example',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 }
+        }
+    },
     scene: {
         preload: preload,
         create: create,
@@ -69,20 +75,22 @@ function preload ()
 
     //this.load.image('sky', base_path+'assets/sky.png');
 
-    this.load.json('map', base_path+'assets/map_less_water.json');
+    this.load.json('map', base_path+'assets/isometric-grass-and-water.json');
     this.load.spritesheet('tiles', base_path+'assets/isometric-grass-and-water.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
 }
-
+let water,grass;
 function create ()
 {
     scene = this;
 
     //this.add.image(400, 300, 'sky');
 
-    //  Our Skeleton class
+    grass=this.physics.add.staticGroup();
+    water=this.physics.add.staticGroup();
 
+    //  Our Skeleton class
     let Skeleton = new Phaser.Class({
 
         Extends: Phaser.GameObjects.Image,
@@ -277,7 +285,9 @@ function create ()
 }*/
 
 let centerX,centerY;
-
+function checkCollides(prpty) {
+    return prpty.name==='collides' && prpty.value===true;
+}
 function buildMap ()
 {
     //  Parse the data out of the map
@@ -290,6 +300,7 @@ function buildMap ()
     tileHeightHalf = tileheight / 2;
 
     const layer = data.layers[0].data;
+    const tilesets= data.tilesets[0].tiles;
 
     const mapwidth = data.layers[0].width; //tile count
     const mapheight = data.layers[0].height;//tile count
@@ -307,8 +318,16 @@ function buildMap ()
 
             let tx = (x - y) * tileWidthHalf;
             let ty = (x + y) * tileHeightHalf;
-
-            let tile = scene.add.image(centerX + tx, centerY + ty, 'tiles', id);
+            let tile;
+            if(tilesets[id].properties.find(checkCollides))
+            {
+                //let tile = scene.add.image(centerX + tx, centerY + ty, 'tiles', id);
+                tile = water.create(centerX + tx, centerY + ty, 'tiles', id);
+            }
+            else
+            {
+                tile = grass.create(centerX + tx, centerY + ty, 'tiles', id);
+            }
 
             tile.depth = centerY + ty;
 

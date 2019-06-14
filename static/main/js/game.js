@@ -27,7 +27,7 @@ let layer,mapwidth,mapheight;
 //let heroWidth=128;
 let player;
 let heroMapTile;
-let skeletons = [];
+let skeletons = {};
 let tileWidthHalf;
 let scene;
 let tilesets;
@@ -96,6 +96,26 @@ function preload ()
 }
 
 
+let userid='zypang';
+let Skeleton = new Phaser.Class({
+
+    Extends: Phaser.GameObjects.Sprite,
+    //Extends: Phaser.Physics.Arcade.Sprite,
+
+    initialize:
+
+        function Skeleton (scene, x, y)
+        {
+            this.x = x;
+            this.y = y;
+
+            Phaser.GameObjects.Sprite.call(this, scene, x, y-16, 'skeleton', 224);
+
+            this.depth = y + 64;
+
+            //scene.time.delayedCall(this.anim.speed * 1000, this.changeFrame, [], this);
+        },
+});
 
 function create ()
 {
@@ -113,25 +133,6 @@ function create ()
     cursors = this.input.keyboard.createCursorKeys();
 
     //  Our Skeleton class
-    let Skeleton = new Phaser.Class({
-
-        Extends: Phaser.GameObjects.Sprite,
-        //Extends: Phaser.Physics.Arcade.Sprite,
-
-        initialize:
-
-        function Skeleton (scene, x, y)
-        {
-            this.x = x;
-            this.y = y;
-
-            Phaser.GameObjects.Sprite.call(this, scene, x, y, 'skeleton', 224);
-
-            this.depth = y + 64;
-
-            //scene.time.delayedCall(this.anim.speed * 1000, this.changeFrame, [], this);
-        },
-    });
 
     buildMap();
 
@@ -140,16 +141,22 @@ function create ()
 
     let heroIsoPos=cartesianToIsometric(heroMapPos);
 
-    skeletons.push(this.add.existing(new Skeleton(this, heroIsoPos.x, heroIsoPos.y)));
-    player=skeletons[0];
+    skeletons[userid]=this.add.existing(new Skeleton(this, heroIsoPos.x, heroIsoPos.y));
+    player=skeletons[userid];
     player.anims.play('idle',true);
 
     placeHouses();
     //this.physics.add.collider(player,bkg);
 
-    skeletons.push(this.add.existing(new Skeleton(this, 760, 100,)));
-    skeletons.push(this.add.existing(new Skeleton(this, 800, 140,)));
-
+    let playerInfos={
+        p1:{
+            position:[2,5]
+        },
+        p2:{
+            position: [9,21]
+        }
+    };
+    addOtherPlayers(playerInfos);
 
     this.cameras.main.setSize(1600, 1200);
 
@@ -398,6 +405,12 @@ function isWalkableSimple() {
         console.log(nextX,nextY);
         return false;
     }
+    for(plyer in playerCollides) {
+        if (playerCollides[plyer].containsArray([nextX, nextY])) {
+            console.log(nextX, nextY,plyer);
+            return false;
+        }
+    }
     if(HouseCollidesCoords.containsArray([nextX,nextY]))
     {
         console.log(nextX,nextY);
@@ -485,4 +498,38 @@ function getCartesianFromTileCoordinates(tilePt, tileHeight){
     tempPt.x=tilePt.x*tileHeight;
     tempPt.y=tilePt.y*tileHeight;
     return(tempPt);
+}
+function addOtherPlayers(playerInfos) {
+    for(plyerId in playerInfos)
+    {
+        let plyerCoord=playerInfos[plyerId].position;
+        let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
+
+        skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y));
+    }
+    refreshOtherPlayers(playerInfos);
+
+}
+let playerCollides={};
+let playerAuxArrayX= [ 0,1 ];
+let playerAuxArrayY= [ 0,1 ];
+
+function refreshOtherPlayers(playerInfos) {
+    for(plyerId in playerInfos)
+    {
+        let plyerCoord=playerInfos[plyerId].position;
+        let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
+
+        skeletons[plyerId].x=playerIsoPos.x;
+        skeletons[plyerId].y=playerIsoPos.y-16;
+
+        for (let j = 0; j < playerAuxArrayX.length; ++j) {
+            for (let k = 0; k < playerAuxArrayY.length; ++k) {
+                playerCollides[plyerId]=[];
+                playerCollides[plyerId].push([plyerCoord[0] + playerAuxArrayX[j], plyerCoord[1] + playerAuxArrayY[k]]);
+            }
+        }
+
+        player.anims.play('idle',true);
+    }
 }

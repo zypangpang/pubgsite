@@ -23,7 +23,7 @@
         {
          "columns":4,
          "firstgid":1,
-         "image":"isometric-grass-and-water.png",
+         "image":"..\/..\/..\/map\/isometric-grass-and-water.png",
          "imageheight":384,
          "imagewidth":256,
          "margin":0,
@@ -132,7 +132,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 1, 1, 1]
                 }, 
@@ -142,7 +142,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 0, 1, 1]
                 }, 
@@ -152,7 +152,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 1, 1, 0]
                 }, 
@@ -162,7 +162,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 1, 0, 1]
                 }, 
@@ -172,7 +172,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 0, 1, 1]
                 }, 
@@ -182,7 +182,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 0, 1, 0]
                 }, 
@@ -192,7 +192,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 1, 0, 0]
                 }, 
@@ -202,7 +202,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 1, 0, 1]
                 }, 
@@ -212,7 +212,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 0, 1, 1]
                 }, 
@@ -222,7 +222,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 0, 1, 0]
                 }, 
@@ -232,7 +232,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 1, 0, 0]
                 }, 
@@ -242,7 +242,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 1, 0, 1]
                 }, 
@@ -252,7 +252,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[0, 1, 1, 0]
                 }, 
@@ -262,7 +262,7 @@
                         {
                          "name":"collides",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }],
                  "terrain":[1, 0, 0, 1]
                 }, 

@@ -21,7 +21,7 @@ GROUP_DICT = {'admin': '管理员', 'guest': '访客', 'user': '用户'}
 
 from django.http import HttpResponse
 
-
+# 接口
 @login_required
 def index(request):
     return render(request, 'main/index.html')
@@ -32,6 +32,47 @@ def game(request, name='firstGame'):
     return render(request, f'main/game.html', {"game_path": f"main/js/{name}.js"})
 
 
+@login_required
+def choose_room(request):
+    return render(request, 'main/room.html')
+
+
+@login_required
+def room(request):
+    return 1
+
+
+@login_required
+def parachute(request):
+    return 1
+
+
+@login_required
+def move(request):
+    return 1
+
+
+@login_required
+def certificate(request):
+    return 1
+
+
+@login_required
+def choose_cmd(request):
+    return 1
+
+
+@login_required
+def open_box(request):
+    return 1
+
+
+@login_required
+def init(request):
+    return 1
+
+
+# 自定义方法
 def get_return_dict_for_navbar(request):
     return dict(user_name=request.user.get_username(), user_group=GROUP_DICT[request.user.groups.all()[0].name])
 

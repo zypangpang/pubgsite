@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import permission_required
 
 from django.http import HttpResponse, Http404
 
+from main import models
+
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 10
 
@@ -39,7 +41,10 @@ def choose_room(request):
 
 @login_required
 def room(request):
-    return 1
+    r = request.GET['r']
+    user_id = request.user.id
+    models.Users.objects.filter(user_id=user_id).update(room_id=r)
+    return HttpResponse(r)
 
 
 @login_required

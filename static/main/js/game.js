@@ -2,7 +2,7 @@
     type: Phaser.AUTO,
     width: 1600,
     height: 800,
-    backgroundColor: '#42271a',
+    backgroundColor: '#1c2b31',
     //backgroundColor: '#244d1b',
     parent: 'phaser-example',
     physics: {
@@ -11,6 +11,11 @@
             gravity: { y: 0 }
         }
     },
+    /*plugins: {
+        global: [
+            { key: 'DialogModalPlugin', plugin: DialogModalPlugin, start: true }
+        ]
+    },*/
     scene: {
         preload: preload,
         create: create,
@@ -78,9 +83,10 @@ let anims = {
 };
 
 
+let base_path='/static/main/';
+
 function preload ()
 {
-    let base_path='/static/main/';
 
     //this.load.image('sky', base_path+'assets/sky.png');
 
@@ -89,10 +95,12 @@ function preload ()
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
     this.load.image('background', base_path+'assets/background.png');
-    this.load.spritesheet('dude',
-        base_path+'assets/dude.png',
-        { frameWidth: 32, frameHeight: 48 }
+    this.load.spritesheet('helicopter',
+        base_path+'assets/helicopter-spritesheet.png',
+        { frameWidth: 423, frameHeight: 150 }
     );
+
+    this.load.scenePlugin('DialogModalPlugin', base_path+'js/dialog_plugin.js','dialogModalPlugin','dialogModal');
 }
 
 
@@ -116,37 +124,65 @@ let Skeleton = new Phaser.Class({
             //scene.time.delayedCall(this.anim.speed * 1000, this.changeFrame, [], this);
         },
 });
-
+let dialog;
+let helicopter;
+let mapGroup;
+let houseGroup;
+let jumpSkeleton;
 function create ()
 {
     scene = this;
 
-    //this.add.image(400, 300, 'sky');
-    //bkg=this.physics.add.staticImage(800,400,'background');
-
-    //grass=this.physics.add.staticGroup();
-    //water=this.physics.add.staticGroup();
-
     createAnims();
+
+    helicopter=this.physics.add.sprite(0,100,'helicopter',0);
+    helicopter.depth=1200;
+    helicopter.setVelocityX(100);
+    jumpSkeleton = this.physics.add.sprite(800,150,'skeleton',224);
+    jumpSkeleton.depth=1500;
+    jumpSkeleton.setVisible(false);
+
+    dialog=this.dialogModal;
+    dialog.init();
+    dialog.toggleWindow();
+
 
 
     cursors = this.input.keyboard.createCursorKeys();
 
-    //  Our Skeleton class
+    mapGroup=this.add.group();
+    houseGroup=this.add.group();
+
+
 
     buildMap();
 
+
+    placeHouses();
+    //this.physics.add.collider(player,bkg);
+    mapGroup.toggleVisible();
+    houseGroup.toggleVisible();
+
+    requestAndRefreshPlayerInfo();
+
+
+    this.cameras.main.setSize(1600, 800);
+
+    /*this.input.on('pointerdown',function (pointer) {
+        console.log(pointer.x,pointer.y);
+        skeletons[0].setDestination(pointer.x,pointer.y)
+    },this);*/
+
+    // this.cameras.main.scrollX = 800;
+}
+function requestAndRefreshPlayerInfo() {
+    // Add current player
     heroMapTile=new Phaser.Geom.Point(3,15);
     heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
 
     let heroIsoPos=cartesianToIsometric(heroMapPos);
-
-    skeletons[userid]=this.add.existing(new Skeleton(this, heroIsoPos.x, heroIsoPos.y));
+    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y));
     player=skeletons[userid];
-    player.anims.play('idle',true);
-
-    placeHouses();
-    //this.physics.add.collider(player,bkg);
 
     let playerInfos={
         p1:{
@@ -158,16 +194,11 @@ function create ()
     };
     addOtherPlayers(playerInfos);
 
-    this.cameras.main.setSize(1600, 1200);
-
-    /*this.input.on('pointerdown',function (pointer) {
-        console.log(pointer.x,pointer.y);
-        skeletons[0].setDestination(pointer.x,pointer.y)
-    },this);*/
-
-    // this.cameras.main.scrollX = 800;
+    for(let plyer in skeletons)
+    {
+        skeletons[plyer].setVisible(false);
+    }
 }
-
 function createAnims()
 {
     /*still:{offset:224,x:0,y:0,opposite:'still'},
@@ -179,6 +210,12 @@ function createAnims()
     southEast: { offset: 160, x: 2, y: 1, opposite: 'northWest' },
     south: { offset: 192, x: 0, y: 2, opposite: 'north' },
     southWest: { offset: 224, x: -2, y: 1, opposite: 'northEast' }*/
+
+    scene.anims.create({
+        key: 'heli-fly',
+        frames: scene.anims.generateFrameNumbers('helicopter', { start: 0, end: 3 }),
+        frameRate:20
+    });
 
     scene.anims.create({
         key: 'idle',
@@ -268,6 +305,7 @@ function drawTileIso(x,y,tileId)
     let ty=isoPt.y;
     let tile = scene.add.image(tx, ty, 'tiles', tileId);
     tile.depth = centerY + ty;
+    mapGroup.add(tile);
 }
 function buildMap ()
 {
@@ -325,12 +363,45 @@ function placeHouses ()
         //let house = scene.physics.add.staticImage(tmpPos.x,tmpPos.y, 'house');
         let house = scene.add.image(tmpPos.x, tmpPos.y, 'house');
         house.depth = house.y + 118;
+        houseGroup.add(house);
     }
     console.log(HouseCollidesCoords);
 }
-
+function jump() {
+    jumpSkeleton.setVisible(true);
+    jumpSkeleton.setGravityY(150);
+    scene.time.delayedCall(1000,heliFlyOut,[],scene);
+    scene.time.delayedCall(15000,heliDestroy,[],scene);
+}
+function heliDestroy() {
+    helicopter.destroy();
+    console.log('heli destroy');
+}
+function heliFlyOut() {
+    helicopter.setVelocityX(100);
+    mapGroup.toggleVisible();
+    houseGroup.toggleVisible();
+    //dialog.toggleWindow();
+    //dialog.setText('hello world ljdlshflsdl');
+}
 function update ()
 {
+    if(helicopter.anims)
+        helicopter.anims.play('heli-fly',true);
+    if(Math.round(helicopter.x)===800) {
+        helicopter.setVelocityX(0);
+        scene.time.delayedCall(1000,jump,[],scene);
+    }
+    if(jumpSkeleton.y>500)
+    {
+        jumpSkeleton.destroy();
+        for(let plyer in skeletons)
+        {
+            skeletons[plyer].setVisible(true);
+        }
+    }
+
+
     detectKeyInput();
     //if no key is pressed then stop else play walking animation
     if (dY === 0 && dX === 0)
@@ -533,3 +604,4 @@ function refreshOtherPlayers(playerInfos) {
         player.anims.play('idle',true);
     }
 }
+

@@ -4,7 +4,7 @@
     height: 800,
     backgroundColor: '#1c2b31',
     //backgroundColor: '#244d1b',
-    parent: 'phaser-example',
+    //parent: 'phaser-example',
     physics: {
         default: 'arcade',
         arcade: {
@@ -23,6 +23,7 @@
     }
 };
 
+/**************** global variables ************************/
 let game = new Phaser.Game(config);
 let dX=0,dY=0;
 let heroMapPos;
@@ -39,6 +40,7 @@ let tilesets;
 let centerX,centerY;
 //let first=true;
 let gameOver=false;
+/**************** global variables ************************/
 
 
 
@@ -94,7 +96,7 @@ function preload ()
     this.load.spritesheet('tiles', base_path+'assets/isometric-grass-and-water.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
-    this.load.image('background', base_path+'assets/background.png');
+    this.load.image('background', base_path+'assets/background-2.jpg');
     this.load.spritesheet('helicopter',
         base_path+'assets/helicopter-spritesheet.png',
         { frameWidth: 423, frameHeight: 150 }
@@ -105,66 +107,70 @@ function preload ()
 
 
 let userid='zypang';
-let Skeleton = new Phaser.Class({
 
-    Extends: Phaser.GameObjects.Sprite,
-    //Extends: Phaser.Physics.Arcade.Sprite,
+class Skeleton extends Phaser.GameObjects.Sprite {
+    constructor(scene, x, y){
+        super(scene, x, y-16, 'skeleton', 224);
 
-    initialize:
+        this.x = x;
+        this.y = y;
 
-        function Skeleton (scene, x, y)
-        {
-            this.x = x;
-            this.y = y;
+        this.depth = y + 64;
+    }
+}
 
-            Phaser.GameObjects.Sprite.call(this, scene, x, y-16, 'skeleton', 224);
-
-            this.depth = y + 64;
-
-            //scene.time.delayedCall(this.anim.speed * 1000, this.changeFrame, [], this);
-        },
-});
 let dialog;
 let helicopter;
 let mapGroup;
 let houseGroup;
 let jumpSkeleton;
+
 function create ()
 {
     scene = this;
 
     createAnims();
 
+    //add background
+    this.add.image(800,400,'background');
+
+    /**************** create objects for parachuting **********************/
     helicopter=this.physics.add.sprite(0,100,'helicopter',0);
     helicopter.depth=1200;
     helicopter.setVelocityX(100);
     jumpSkeleton = this.physics.add.sprite(800,150,'skeleton',224);
     jumpSkeleton.depth=1500;
     jumpSkeleton.setVisible(false);
+    /**************** create objects for parachuting **********************/
 
+    /**************** create dialog modal to show message **********************/
     dialog=this.dialogModal;
     dialog.init();
     dialog.toggleWindow();
+    /**************** create dialog modal to show message **********************/
 
 
-
+    /**************** create cursor key for movement **********************/
     cursors = this.input.keyboard.createCursorKeys();
+    /**************** create cursor key for movement **********************/
 
+    /**************** create group for convenience **********************/
     mapGroup=this.add.group();
     houseGroup=this.add.group();
+    /**************** create group for convenience **********************/
 
 
-
+    /**************** build map and house **********************/
     buildMap();
-
-
     placeHouses();
-    //this.physics.add.collider(player,bkg);
+    /**************** build map and house **********************/
+
     mapGroup.toggleVisible();
     houseGroup.toggleVisible();
 
+    /**************** put player **********************/
     requestAndRefreshPlayerInfo();
-
+    /**************** put player **********************/
 
     this.cameras.main.setSize(1600, 800);
 
@@ -175,30 +181,8 @@ function create ()
 
     // this.cameras.main.scrollX = 800;
 }
-function requestAndRefreshPlayerInfo() {
-    // Add current player
-    heroMapTile=new Phaser.Geom.Point(3,15);
-    heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
 
-    let heroIsoPos=cartesianToIsometric(heroMapPos);
-    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y));
-    player=skeletons[userid];
 
-    let playerInfos={
-        p1:{
-            position:[2,5]
-        },
-        p2:{
-            position: [9,21]
-        }
-    };
-    addOtherPlayers(playerInfos);
-
-    for(let plyer in skeletons)
-    {
-        skeletons[plyer].setVisible(false);
-    }
-}
 function createAnims()
 {
     /*still:{offset:224,x:0,y:0,opposite:'still'},
@@ -283,6 +267,14 @@ function createAnims()
     const Layer = map.createStaticLayer("Tile Layer 1", tileset, 0, 0);
 }*/
 
+/****************** auxiliary function to get map tile property*********************/
+Array.prototype.containsArray = function(val) {
+    let hash = {};
+    for(let i=0; i<this.length; i++) {
+        hash[this[i]] = i;
+    }
+    return hash.hasOwnProperty(val);
+};
 function checkProperty(name)
 {
     return function (prpty) {
@@ -292,9 +284,12 @@ function checkProperty(name)
 function getProperty(tile,name) {
     return tile.properties.find(checkProperty(name)).value;
 }
+/****************** auxiliary function to get map tile property*********************/
 
 function drawTileIso(x,y,tileId)
 {
+    /*********function to draw map tile on the scene*************/
+
     let cartPt=new Phaser.Geom.Point();//This is here for better code readability.
     cartPt.x=x*tileWidthHalf;
     cartPt.y=y*tileWidthHalf;
@@ -307,6 +302,7 @@ function drawTileIso(x,y,tileId)
     tile.depth = centerY + ty;
     mapGroup.add(tile);
 }
+
 function buildMap ()
 {
     //  Parse the data out of the map
@@ -335,13 +331,8 @@ function buildMap ()
         }
     }
 }
-function getCenterXYFromTileCoord(tx,ty) {
-    return cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(tx,ty),tileWidthHalf));
-    //let tmpPos=new Phaser.Geom.Point();
-    //tmpPos.x=centerX+(tx-ty)*tileWidthHalf;
-    //tmpPos.y=centerY+(tx+ty)/2*tileWidthHalf;
-    //return tmpPos;
-}
+
+/********************* place house related ******************************/
 let HouseCoords=[[3,21],[21,3]];
 let HouseCollidesCoords=[];
 let houseAuxArrayX= [ 0,1,2,3 ];
@@ -367,6 +358,9 @@ function placeHouses ()
     }
     console.log(HouseCollidesCoords);
 }
+/********************* place house related ******************************/
+
+/******************** auxiliary function for parachuting ****************/
 function jump() {
     jumpSkeleton.setVisible(true);
     jumpSkeleton.setGravityY(150);
@@ -384,15 +378,18 @@ function heliFlyOut() {
     //dialog.toggleWindow();
     //dialog.setText('hello world ljdlshflsdl');
 }
+/******************** auxiliary function for parachuting ****************/
+
 function update ()
 {
+    /***************** parachuting animation ********************/
     if(helicopter.anims)
         helicopter.anims.play('heli-fly',true);
     if(Math.round(helicopter.x)===800) {
         helicopter.setVelocityX(0);
         scene.time.delayedCall(1000,jump,[],scene);
     }
-    if(jumpSkeleton.y>500)
+    if(jumpSkeleton && jumpSkeleton.y>500)
     {
         jumpSkeleton.destroy();
         for(let plyer in skeletons)
@@ -400,8 +397,10 @@ function update ()
             skeletons[plyer].setVisible(true);
         }
     }
+    /***************** parachuting animation ********************/
 
 
+    /***************** hero move ********************/
     detectKeyInput();
     //if no key is pressed then stop else play walking animation
     if (dY === 0 && dX === 0)
@@ -411,8 +410,8 @@ function update ()
     }else{
         player.anims.play(facing,true);
     }
-    //return;
-    //check if we are walking into a wall else move hero in 2D
+
+    //check if we are walking into an object else move hero in 2D
     if (isWalkableSimple())
     {
         heroMapPos.x +=  heroSpeed * dX;
@@ -429,35 +428,11 @@ function update ()
         //get the new hero map tile
         heroMapTile=getTileCoordinates(heroMapPos,tileWidthHalf);
     }
+    /***************** hero move ********************/
 }
 
-function cartesianToIsometric(cartPt){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=centerX+cartPt.x-cartPt.y;
-    tempPt.y=centerY+(cartPt.x+cartPt.y)/2;
-    return (tempPt);
-}
 
-function isometricToCartesian(isoPt){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=(2*isoPt.y+isoPt.x)/2;
-    tempPt.y=(2*isoPt.y-isoPt.x)/2;
-    return (tempPt);
-}
 
-function getTileCoordinates(cartPt, tileHeight){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=Math.floor(cartPt.x/tileHeight);
-    tempPt.y=Math.floor(cartPt.y/tileHeight);
-    return(tempPt);
-}
-Array.prototype.containsArray = function(val) {
-    let hash = {};
-    for(let i=0; i<this.length; i++) {
-        hash[this[i]] = i;
-    }
-    return hash.hasOwnProperty(val);
-};
 function isWalkableSimple() {
     //let heroCoordinate=getTileCoordinates(heroMapPos,tileWidthHalf);
     let tdX=dX,tdY=dY;
@@ -564,12 +539,65 @@ function detectKeyInput(){//assign direction for character & set x,y speed compo
         }
     }
 }
+
+/******************** auxiliary function to deal with isometric projection *********************/
 function getCartesianFromTileCoordinates(tilePt, tileHeight){
     let tempPt=new Phaser.Geom.Point();
     tempPt.x=tilePt.x*tileHeight;
     tempPt.y=tilePt.y*tileHeight;
     return(tempPt);
 }
+function cartesianToIsometric(cartPt){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=centerX+cartPt.x-cartPt.y;
+    tempPt.y=centerY+(cartPt.x+cartPt.y)/2;
+    return (tempPt);
+}
+
+function isometricToCartesian(isoPt){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=(2*isoPt.y+isoPt.x)/2;
+    tempPt.y=(2*isoPt.y-isoPt.x)/2;
+    return (tempPt);
+}
+
+function getTileCoordinates(cartPt, tileHeight){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=Math.floor(cartPt.x/tileHeight);
+    tempPt.y=Math.floor(cartPt.y/tileHeight);
+    return(tempPt);
+}
+function getCenterXYFromTileCoord(tx,ty) {
+    return cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(tx,ty),tileWidthHalf));
+}
+/******************** auxiliary function to deal with isometric projection *********************/
+
+/******************** player related functions *********************/
+function requestAndRefreshPlayerInfo() {
+    // Add current player
+    heroMapTile=new Phaser.Geom.Point(3,15);
+    heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
+
+    let heroIsoPos=cartesianToIsometric(heroMapPos);
+    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y));
+    player=skeletons[userid];
+
+    let playerInfos={
+        p1:{
+            position:[2,5]
+        },
+        p2:{
+            position: [9,21]
+        }
+    };
+    addOtherPlayers(playerInfos);
+
+    for(let plyer in skeletons)
+    {
+        skeletons[plyer].setVisible(false);
+    }
+}
+
 function addOtherPlayers(playerInfos) {
     for(plyerId in playerInfos)
     {
@@ -604,4 +632,4 @@ function refreshOtherPlayers(playerInfos) {
         player.anims.play('idle',true);
     }
 }
-
+/******************** player related functions *********************/

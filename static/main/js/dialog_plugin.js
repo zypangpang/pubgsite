@@ -195,7 +195,7 @@
         // (which will invoke the 'start' event) but should be considered dormant.
         shutdown() {
             if (this.timedEvent) this.timedEvent.remove();
-if (this.text) this.text.destroy();
+            if (this.text) this.text.destroy();
         }
 
         // called when a Scene is destroyed by the Scene Manager

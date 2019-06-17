@@ -137,7 +137,7 @@ function create ()
     /**************** create objects for parachuting **********************/
     helicopter=this.physics.add.sprite(0,100,'helicopter',0);
     helicopter.depth=1200;
-    helicopter.setVelocityX(100);
+    helicopter.setVelocityX(200);
     jumpSkeleton = this.physics.add.sprite(800,150,'skeleton',224);
     jumpSkeleton.depth=1500;
     jumpSkeleton.setVisible(false);
@@ -334,20 +334,23 @@ function buildMap ()
 
 /********************* place house related ******************************/
 let HouseCoords=[[3,21],[21,3]];
-let HouseCollidesCoords=[];
+let HouseCollidesCoords={};
 let houseAuxArrayX= [ 0,1,2,3 ];
 let houseAuxArrayY= [ 1,2,3 ];
+let houseNames=['good','bad'];
+let Houses={};
 function placeHouses ()
 {
     let len=HouseCoords.length;
     for(let i=0;i<len;++i) {
         let point=HouseCoords[i];
         console.log(point);
+        HouseCollidesCoords[houseNames[i]]=[];
         for(let j=0;j<houseAuxArrayX.length;++j)
         {
             for(let k=0;k<houseAuxArrayY.length;++k)
             {
-                HouseCollidesCoords.push([point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]]);
+                HouseCollidesCoords[houseNames[i]].push([point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]]);
             }
         }
         let tmpPos = getCenterXYFromTileCoord(point[0],point[1]);
@@ -355,6 +358,7 @@ function placeHouses ()
         let house = scene.add.image(tmpPos.x, tmpPos.y, 'house');
         house.depth = house.y + 118;
         houseGroup.add(house);
+        Houses[houseNames[i]]=house;
     }
     console.log(HouseCollidesCoords);
 }
@@ -399,6 +403,9 @@ function update ()
     }
     /***************** parachuting animation ********************/
 
+    houseGroup.children.iterate(function (child) {
+        child.clearTint();
+    });
 
     /***************** hero move ********************/
     detectKeyInput();
@@ -451,16 +458,20 @@ function isWalkableSimple() {
         console.log(nextX,nextY);
         return false;
     }
-    for(plyer in playerCollides) {
+    for(let plyer in playerCollides) {
         if (playerCollides[plyer].containsArray([nextX, nextY])) {
             console.log(nextX, nextY,plyer);
+            skeletons[plyer].setTint(0xff0000);
             return false;
         }
     }
-    if(HouseCollidesCoords.containsArray([nextX,nextY]))
-    {
-        console.log(nextX,nextY);
-        return false;
+    for(let house in HouseCollidesCoords) {
+        if (HouseCollidesCoords[house].containsArray([nextX, nextY])) {
+            Houses[house].setTint(0x00ff00);
+
+            console.log(nextX, nextY);
+            return false;
+        }
     }
     let id=layer[nextY*mapheight+nextX]-1;
     //if(layer[newTileCorner1.y*mapheight+newTileCorner1.x==1){

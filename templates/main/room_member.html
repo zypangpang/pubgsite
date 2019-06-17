@@ -1,6 +1,6 @@
 {% extends "./base.html" %}
 
-{% block title %}选择房间{% endblock %}
+{% block title %}房间成员{% endblock %}
 
 {% block extra_head %}
     {% load static %}
@@ -17,19 +17,19 @@
                 <ul class="mobile">
                     <li>
                         <img src="{% static "main/images/senke_xy03.jpg" %}" />
-                        <dd>房间一</dd>
+                        <dd>寻寻觅觅</dd>
                         <p>用于友军</p>
                         <a href="/room?r=1"></a>
                     </li>
                     <li>
                         <img src="{% static "main/images/senke_xy01.jpg" %}" />
-                        <dd>房间二</dd>
+                        <dd>冷冷清清</dd>
                         <p>用于敌军</p>
                         <a href="/room?r=2"></a>
                     </li>
                     <li>
                         <img src="{% static "main/images/senke_xy04.jpg" %}" />
-                        <dd>房间三</dd>
+                        <dd>凄凄惨惨戚戚</dd>
                         <p>凑数</p>
                         <a href="/room?r=3"></a>
                     </li>
@@ -41,27 +41,6 @@
 
     </div>
 </div>
-
-<div>
-<table class="table table-hover">
-    {% for room in rooms %}
-    <tr>
-        <td width="200">
-            {{room.room_name}}
-        </td>
-        <td>
-            {{ room.user_name }}
-        </td>
-    </tr>
-    {% endfor %}
-
-</table>
-
-</div>
-    <a href="{% url 'main:index' %}">
-    <button type="button" class="btn btn-info" id="parachuteButton">跳伞</button>
-    </a>
-
 <script type="text/javascript" src="{% static "main/js/jquery.min.js" %}"></script>
 <script type="text/javascript">
 //学员
@@ -84,9 +63,6 @@ $("#four_flash .but_left img").click(function(){
 	}
 	_index5--;
 	$("#four_flash .flashBg ul.mobile").stop().animate({left:-_index5*326},1000);
-});
-$("#parachuteButton").click(function() {
-alert(1);
 });
 </script>
 {% endblock %}

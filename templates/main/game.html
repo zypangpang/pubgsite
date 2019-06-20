@@ -8,6 +8,7 @@
     <script type="text/javascript">
         window.CSRF_TOKEN = "{{ csrf_token }}";
         STATE_URL="{% url 'main:get_state' %}";
+        INIT_URL="{% url 'main:init' %}";
     </script>
 </head>
 </html>

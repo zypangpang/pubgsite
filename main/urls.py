@@ -6,5 +6,6 @@ app_name='main'
 urlpatterns = [
     path('', views.index, name='index'),
     path('game/get_state/', views.get_cur_state, name='get_state'),
+    path('game/init/', views.get_cur_state, name='init'),
     path('game/<slug:name>/', views.game, name='game'),
 ]

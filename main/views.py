@@ -15,7 +15,9 @@ def game(request, name='firstGame'):
 
 
 def get_cur_state(request):
-    i=random.randint(1,10);
+    #print(request.POST['position_x'])
+    #print(request.POST['position_y'])
+    i=random.randint(1,10)
     return_dict={
         'player':'zypang',
         'position':[1,2],

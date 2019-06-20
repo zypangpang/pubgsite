@@ -204,9 +204,10 @@ function create ()
     mapGroup.toggleVisible();
     houseGroup.toggleVisible();
 
+    heroMapTile=new Phaser.Geom.Point(0,0);
     /**************** put player **********************/
     //requestAndRefreshPlayerInfo();
-    get_cur_state();
+    get_cur_state(INIT_URL);
     /**************** put player **********************/
 
     keys = this.input.keyboard.addKeys('ESC,SPACE');
@@ -749,26 +750,34 @@ function refreshOtherPlayers(playerInfos) {
 /******************** player related functions *********************/
 let cur_state;
 let init_scene=true;
-function get_cur_state(){
+function get_cur_state(url){
     $.ajax({
             method: 'post',
-            url: STATE_URL,
+            url: url,
             data: {
                 user_id:'zypang',
+                position_x:heroMapTile.x,
+                position_y:heroMapTile.y,
                 csrfmiddlewaretoken: window.CSRF_TOKEN
             }, // serializes the form's elements.
             success: function(data)
             {
-                //console.log(data);
                 cur_state=JSON.parse(data);
+
                 refreshScene(init_scene);
+
+                if(cur_state['event'])
+                    processEvent();
+
                 init_scene=false;
             },
             error:function (data) {
                 console.log('ajax error');
             }
         });
-    scene.time.delayedCall(1000,get_cur_state);
+    scene.time.delayedCall(1000,function () {
+        get_cur_state(STATE_URL);
+    });
 }
 function refreshScene(first) {
     if(first)
@@ -790,4 +799,7 @@ function refreshScene(first) {
     {
         refreshOtherPlayers(cur_state['otherPlayers']);
     }
+}
+function processEvent() {
+
 }

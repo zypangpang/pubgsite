@@ -43,3 +43,9 @@ class SystemParam(models.Model):
     key = models.CharField(max_length=255)
     intValue = models.IntegerField(default=0)
     strValue = models.CharField(max_length=255)
+
+class Rank(models.Model):
+    def __str__(self):
+        return self.name
+
+    name = models.CharField(max_length=255)

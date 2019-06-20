@@ -5,11 +5,17 @@
 {% block extra_head %}
     {% load static %}
     <link rel="stylesheet" href="{% static "main/css/style.css" %}" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 {% endblock %}
 
 {% block content %}
     <br><br><br>
 <div class="bodyCon08"><!--学员-->
+    <div style="float:right;">
+        <a href="{% url 'main:index' %}">
+        <button type="button" class="btn btn-info" id="parachuteButton" style="height: 480px;background-color:#666666">跳伞</button>
+        </a>
+    </div>
     <div class="students">
 
         <div id="four_flash">
@@ -38,11 +44,10 @@
             <div class="but_left"><img src="{% static "main/images/qianxleft.png" %}" /></div>
             <div class="but_right"><img src="{% static "main/images/qianxr.png" %}" /></div>
         </div>
-
     </div>
+
 </div>
 
-<div>
 <table class="table table-hover">
     {% for room in rooms %}
     <tr>
@@ -57,10 +62,24 @@
 
 </table>
 
+<div class="container">
+    <div class="card-drop">
+
+        <a class='toggle' href="#">
+            <i class='fa fa-suitcase'></i>
+              <span class='label-active'>{% for cur in current %}{{ cur.name }}{% endfor %}</span>
+        </a>
+        <ul>
+            {% for rank in ranks %}
+            <li>
+                <a data-label="{{ rank.name }}" href="/choose_rank?rank={{ rank.id }}"><i class='fa fa-suitcase'></i> {{ rank.name }}</a>
+             </li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
-    <a href="{% url 'main:index' %}">
-    <button type="button" class="btn btn-info" id="parachuteButton">跳伞</button>
-    </a>
+
+
 
 <script type="text/javascript" src="{% static "main/js/jquery.min.js" %}"></script>
 <script type="text/javascript">
@@ -89,4 +108,48 @@ $("#parachuteButton").click(function() {
 alert(1);
 });
 </script>
+    <script src="http://www.jq22.com/jquery/2.1.1/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="{% static "main/js/jquery-2.1.1.min.js" %}"><\/script>')</script>
+	<script>
+	(function ($) {
+	    var cards = $('.card-drop'), toggler = cards.find('.toggle'), links = cards.find('ul>li>a'), li = links.parent('li'), count = links.length, width = 100;
+	    li.each(function (i) {
+	        $(this).css('z-index', count - i);
+	    });
+	    function setClosed() {
+	        li.each(function (index) {
+	            $(this).css('top', index * 4).css('width', width - index * 0.5 + '%').css('margin-left', index * 0.25 + '%');
+	        });
+	        li.addClass('closed');
+	        toggler.removeClass('active');
+	    }
+	    setClosed();
+	    toggler.on('mousedown', function () {
+	        var $this = $(this);
+	        if ($this.is('.active')) {
+	            setClosed();
+	        } else {
+	            $this.addClass('active');
+	            li.removeClass('closed');
+	            li.each(function (index) {
+	                $(this).css('top', 60 * (index + 1)).css('width', '100%').css('margin-left', '0px');
+	            });
+	        }
+	    });
+	    links.on('click', function (e) {
+	        var $this = $(this), label = $this.data('label');
+	        icon = $this.children('i').attr('class');
+	        li.removeClass('active');
+	        if ($this.parent('li').is('active')) {
+	            $this.parent('li').removeClass('active');
+	        } else {
+	            $this.parent('li').addClass('active');
+	        }
+	        toggler.children('span').text(label);
+	        toggler.children('i').removeClass().addClass(icon);
+	        setClosed();
+	        e.preventDefault;
+	    });
+	}(jQuery));
+	</script>
 {% endblock %}

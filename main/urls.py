@@ -16,6 +16,9 @@ urlpatterns = [
     # 进入房间页面
     path('room', views.room, name='room'),
 
+    # 进入房间页面
+    path('choose_rank', views.choose_rank, name='choose_rank'),
+
     # 跳伞接口
     path('parachute', views.parachute, name='parachute'),
 

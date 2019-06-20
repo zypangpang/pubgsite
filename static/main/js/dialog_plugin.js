@@ -124,6 +124,15 @@
             this.graphics.strokeRect(x, y, 20, 20);
         }
 
+        setVisible(visible){
+            if (this.timedEvent) this.timedEvent.remove();
+            if (this.text) this.text.destroy();
+
+            this.visible=visible;
+            //if (this.text) this.text.visible = this.visible;
+            if (this.graphics) this.graphics.visible = this.visible;
+            if (this.closeBtn) this.closeBtn.visible = this.visible;
+        }
         // Hide/Show the dialog window
         toggleWindow() {
             this.visible = !this.visible;

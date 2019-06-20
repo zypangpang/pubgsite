@@ -40,6 +40,8 @@ let tilesets;
 let centerX,centerY;
 //let first=true;
 let gameOver=false;
+let parachuting=true;
+let keys;
 /**************** global variables ************************/
 
 
@@ -62,6 +64,11 @@ let anims = {
         endFrame: 4,
         speed: 0.2
     },
+    known_idle:
+        {
+            startFrame:96,
+            endFrame:100,
+        },
     walk: {
         startFrame: 4,
         endFrame: 12,
@@ -106,16 +113,42 @@ function preload ()
 }
 
 
-let userid='zypang';
+let userid;
 
 class Skeleton extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y){
+    constructor(scene, x, y,user_name,anim_name){
         super(scene, x, y-16, 'skeleton', 224);
+
+        if(anim_name)
+            this.anim_name=anim_name;
+        else
+            this.anim_name='idle';
+
+        this.TEXT_X_OFFSET=0;
+        this.TEXT_Y_OFFSET=45;
+        this.OBJECT_Y_OFFSET=16;
+        this.name_text=scene.add.text(x-this.TEXT_X_OFFSET, y-this.TEXT_Y_OFFSET, user_name, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold'});
+        this.name_text.setOrigin(0.5);
+
+        this.user_id=user_name;
 
         this.x = x;
         this.y = y;
 
         this.depth = y + 64;
+        this.name_text.depth=y+64;
+    }
+    move(next_x,next_y){
+        this.x=next_x;
+        this.y=next_y-this.OBJECT_Y_OFFSET;
+        this.name_text.x=next_x-this.TEXT_X_OFFSET;
+        this.name_text.y=next_y-this.OBJECT_Y_OFFSET-this.TEXT_Y_OFFSET;
+        this.depth=next_y+64;
+        this.name_text.depth=next_y+64;
+    }
+    setVisible(visible){
+        this.name_text.setVisible(visible);
+        super.setVisible(visible);
     }
 }
 
@@ -124,9 +157,10 @@ let helicopter;
 let mapGroup;
 let houseGroup;
 let jumpSkeleton;
-
+let test_parachting=false;
 function create ()
 {
+
     scene = this;
 
     createAnims();
@@ -135,12 +169,14 @@ function create ()
     this.add.image(800,400,'background');
 
     /**************** create objects for parachuting **********************/
-    helicopter=this.physics.add.sprite(0,100,'helicopter',0);
-    helicopter.depth=1200;
-    helicopter.setVelocityX(200);
-    jumpSkeleton = this.physics.add.sprite(800,150,'skeleton',224);
-    jumpSkeleton.depth=1500;
-    jumpSkeleton.setVisible(false);
+    if(test_parachting) {
+        helicopter = this.physics.add.sprite(0, 100, 'helicopter', 0);
+        helicopter.depth = 1200;
+        helicopter.setVelocityX(200);
+        jumpSkeleton = this.physics.add.sprite(800, 150, 'skeleton', 224);
+        jumpSkeleton.depth = 1500;
+        jumpSkeleton.setVisible(false);
+    }
     /**************** create objects for parachuting **********************/
 
     /**************** create dialog modal to show message **********************/
@@ -169,8 +205,15 @@ function create ()
     houseGroup.toggleVisible();
 
     /**************** put player **********************/
-    requestAndRefreshPlayerInfo();
+    //requestAndRefreshPlayerInfo();
+    get_cur_state();
     /**************** put player **********************/
+
+    keys = this.input.keyboard.addKeys('ESC,SPACE');
+    /**************ONLY FOR DEBUG**************************/
+    setAllVisible(true);
+    showMessage('game begin',5000);
+    /**************ONLY FOR DEBUG**************************/
 
     this.cameras.main.setSize(1600, 800);
 
@@ -200,11 +243,15 @@ function createAnims()
         frames: scene.anims.generateFrameNumbers('helicopter', { start: 0, end: 3 }),
         frameRate:20
     });
-
+    scene.anims.create({
+        key: 'known-idle',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 192, end: 195 }),
+        frameRate:5
+    });
     scene.anims.create({
         key: 'idle',
         frames: scene.anims.generateFrameNumbers('skeleton', { start: 224, end: 227 }),
-        frameRate:10
+        frameRate:5
     });
 
     scene.anims.create({
@@ -363,13 +410,22 @@ function placeHouses ()
     console.log(HouseCollidesCoords);
 }
 /********************* place house related ******************************/
-
+function setAllVisible(visible){
+    mapGroup.children.iterate(function (child) {
+        child.setVisible(visible);
+    });
+    houseGroup.children.iterate(function (child) {
+        child.setVisible(visible);
+    });
+    for (let plyer in skeletons) {
+        skeletons[plyer].setVisible(visible);
+    }
+}
 /******************** auxiliary function for parachuting ****************/
 function jump() {
     jumpSkeleton.setVisible(true);
     jumpSkeleton.setGravityY(150);
     scene.time.delayedCall(1000,heliFlyOut,[],scene);
-    scene.time.delayedCall(15000,heliDestroy,[],scene);
 }
 function heliDestroy() {
     helicopter.destroy();
@@ -379,29 +435,64 @@ function heliFlyOut() {
     helicopter.setVelocityX(100);
     mapGroup.toggleVisible();
     houseGroup.toggleVisible();
+    scene.time.delayedCall(10000,heliDestroy,[],scene);
     //dialog.toggleWindow();
     //dialog.setText('hello world ljdlshflsdl');
 }
+function showMessage(message,time_out,call_back) {
+    dialog.setVisible(true);
+    dialog.setText(message,true);
+    if(time_out) {
+        scene.time.delayedCall(time_out,function () {
+            dialog.setVisible(false);
+        })
+    }
+    if(call_back)
+        call_back();
+}
 /******************** auxiliary function for parachuting ****************/
-
 function update ()
 {
-    /***************** parachuting animation ********************/
-    if(helicopter.anims)
-        helicopter.anims.play('heli-fly',true);
-    if(Math.round(helicopter.x)===800) {
-        helicopter.setVelocityX(0);
-        scene.time.delayedCall(1000,jump,[],scene);
-    }
-    if(jumpSkeleton && jumpSkeleton.y>500)
+    if(init_scene)
+        return;
+    for(let plyer in skeletons)
     {
-        jumpSkeleton.destroy();
-        for(let plyer in skeletons)
-        {
-            skeletons[plyer].setVisible(true);
+        skeletons[plyer].play(skeletons[plyer].anim_name,true);
+    }
+    /***************** parachuting animation ********************/
+    if(test_parachting) {
+        if (helicopter.anims)
+            helicopter.anims.play('heli-fly', true);
+        if (parachuting && Math.round(helicopter.x) >= 800) {
+            parachuting = false;
+            helicopter.setVelocityX(0);
+            scene.time.delayedCall(1000, jump, [], scene);
+        }
+        if (jumpSkeleton && jumpSkeleton.y > 500) {
+            jumpSkeleton.destroy();
+            for (let plyer in skeletons) {
+                skeletons[plyer].setVisible(true);
+            }
         }
     }
     /***************** parachuting animation ********************/
+    if(openHouseState)
+    {
+        if(keys.ESC.isDown)
+        {
+            dialog.setVisible(false);
+            openHouseState=false;
+        }
+        else if(keys.SPACE.isDown){
+            showMessage('opening house',5000);
+            openHouseState=false;
+        }
+        return;
+    }
+    if(authenticationState)
+    {
+
+    }
 
     houseGroup.children.iterate(function (child) {
         child.clearTint();
@@ -426,11 +517,12 @@ function update ()
         let heroIsoPos= cartesianToIsometric(heroMapPos);
         //console.log(heroIsoPos);
         //console.log(heroMapPos);
-        player.x=heroIsoPos.x;
-        player.y=heroIsoPos.y-16;
+        player.move(heroIsoPos.x,heroIsoPos.y);
+        //player.x=heroIsoPos.x;
+        //player.y=heroIsoPos.y-16;
 
         //depth correct
-        player.depth=heroIsoPos.y+64;
+        //player.depth=heroIsoPos.y+64;
 
         //get the new hero map tile
         heroMapTile=getTileCoordinates(heroMapPos,tileWidthHalf);
@@ -439,7 +531,8 @@ function update ()
 }
 
 
-
+let authenticationState=false;
+let openHouseState=false;
 function isWalkableSimple() {
     //let heroCoordinate=getTileCoordinates(heroMapPos,tileWidthHalf);
     let tdX=dX,tdY=dY;
@@ -462,12 +555,21 @@ function isWalkableSimple() {
         if (playerCollides[plyer].containsArray([nextX, nextY])) {
             console.log(nextX, nextY,plyer);
             skeletons[plyer].setTint(0xff0000);
+
+            showMessage('authenticating '+plyer,undefined,function () {
+                authenticationState=true;
+            });
+
             return false;
         }
     }
     for(let house in HouseCollidesCoords) {
         if (HouseCollidesCoords[house].containsArray([nextX, nextY])) {
             Houses[house].setTint(0x00ff00);
+
+            showMessage('Do you want to open this house?',undefined,function () {
+                openHouseState=true;
+            });
 
             console.log(nextX, nextY);
             return false;
@@ -590,8 +692,9 @@ function requestAndRefreshPlayerInfo() {
     heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
 
     let heroIsoPos=cartesianToIsometric(heroMapPos);
-    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y));
+    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y,userid));
     player=skeletons[userid];
+    player.name_text.setColor('#ff0000');
 
     let playerInfos={
         p1:{
@@ -615,7 +718,10 @@ function addOtherPlayers(playerInfos) {
         let plyerCoord=playerInfos[plyerId].position;
         let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
 
-        skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y));
+        if(playerInfos[plyerId].known)
+            skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId,'known-idle'));
+        else
+            skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId));
     }
     refreshOtherPlayers(playerInfos);
 
@@ -630,8 +736,7 @@ function refreshOtherPlayers(playerInfos) {
         let plyerCoord=playerInfos[plyerId].position;
         let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
 
-        skeletons[plyerId].x=playerIsoPos.x;
-        skeletons[plyerId].y=playerIsoPos.y-16;
+        skeletons[plyerId].move(playerIsoPos.x,playerIsoPos.y);
 
         for (let j = 0; j < playerAuxArrayX.length; ++j) {
             for (let k = 0; k < playerAuxArrayY.length; ++k) {
@@ -639,8 +744,50 @@ function refreshOtherPlayers(playerInfos) {
                 playerCollides[plyerId].push([plyerCoord[0] + playerAuxArrayX[j], plyerCoord[1] + playerAuxArrayY[k]]);
             }
         }
-
-        player.anims.play('idle',true);
     }
 }
 /******************** player related functions *********************/
+let cur_state;
+let init_scene=true;
+function get_cur_state(){
+    $.ajax({
+            method: 'post',
+            url: STATE_URL,
+            data: {
+                user_id:'zypang',
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            }, // serializes the form's elements.
+            success: function(data)
+            {
+                //console.log(data);
+                cur_state=JSON.parse(data);
+                refreshScene(init_scene);
+                init_scene=false;
+            },
+            error:function (data) {
+                console.log('ajax error');
+            }
+        });
+    scene.time.delayedCall(1000,get_cur_state);
+}
+function refreshScene(first) {
+    if(first)
+    {
+        userid=cur_state['player'];
+        // Add current player
+        heroMapTile=new Phaser.Geom.Point(cur_state['position'][0],cur_state['position'][1]);
+        heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
+
+        let heroIsoPos=cartesianToIsometric(heroMapPos);
+        player=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y,userid));
+        player.name_text.setColor('#ff0000');
+        player.play('idle');
+
+        addOtherPlayers(cur_state['otherPlayers']);
+        //console.log('length:'+Object.keys(skeletons).length);
+    }
+    else
+    {
+        refreshOtherPlayers(cur_state['otherPlayers']);
+    }
+}

@@ -28,8 +28,10 @@ class Users(models.Model):
     position_y = models.IntegerField(default=0)
     public_key = models.TextField(default='')
     private_key = models.TextField(default='')
+    rsa_n = models.TextField(default='')
     mill_rand = models.TextField(default='')
     mill_prime = models.TextField(default='')
+    vote_to = models.IntegerField(default=0)
 
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
 

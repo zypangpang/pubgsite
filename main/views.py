@@ -52,15 +52,14 @@ def room(request):
     r = request.GET['r']
     user_id = request.user.id
     models.Users.objects.filter(user_id=user_id).update(room_id=r)
-    userDtb = models.User.objects.raw("select a.id, a.name as room_name, group_concat(c.username) as user_name from main_room a left join main_users b on a.id = b.room_id left join auth_user c on c.id = b.user_id group by a.id")
     return redirect('main:choose-room')
 
 @login_required
 def choose_rank(request):
     rank = request.GET['rank']
     user_id = request.user.id
-    if user_id == 0:
-        user_id = random.randint(1,19)
+    if rank == '0':
+        rank = random.randint(1,19)
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
     return redirect('main:choose-room')
 

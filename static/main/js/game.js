@@ -988,6 +988,7 @@ function processGameOver(goodend) {
         {
             skeletons[plyer].play('die',true);
         }
+        player.play('die',true);
     }
 
 }

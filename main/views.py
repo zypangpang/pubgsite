@@ -53,29 +53,14 @@ def room(request):
     user_id = request.user.id
     models.Users.objects.filter(user_id=user_id).update(room_id=r)
     userDtb = models.User.objects.raw("select a.id, a.name as room_name, group_concat(c.username) as user_name from main_room a left join main_users b on a.id = b.room_id left join auth_user c on c.id = b.user_id group by a.id")
-    context = {}
-    context['rooms'] = userDtb
-    ranks = models.Rank.objects.raw("select id,name from main_rank")
-    context['ranks'] = ranks
-    sql = "select a.id,a.name from main_rank a left join main_users b on a.id = b.rank left join auth_user c on c.id = b.user_id where c.id = " + request.user.id.__str__()
-    currentRank = models.Rank.objects.raw(sql)
-    context['current'] = currentRank
-    return render(request, 'main/room.html', context)
+    return redirect('main:choose-room')
 
 @login_required
 def choose_rank(request):
     rank = request.GET['rank']
     user_id = request.user.id
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
-    userDtb = models.User.objects.raw("select a.id, a.name as room_name, group_concat(c.username) as user_name from main_room a left join main_users b on a.id = b.room_id left join auth_user c on c.id = b.user_id group by a.id")
-    context = {}
-    context['rooms'] = userDtb
-    ranks = models.Rank.objects.raw("select id,name from main_rank")
-    context['ranks'] = ranks
-    sql = "select a.id,a.name from main_rank a left join main_users b on a.id = b.rank left join auth_user c on c.id = b.user_id where c.id = " + request.user.id.__str__()
-    currentRank = models.Rank.objects.raw(sql)
-    context['current'] = currentRank
-    return render(request, 'main/room.html', context)
+    return redirect('main:choose-room')
 
 
 @login_required

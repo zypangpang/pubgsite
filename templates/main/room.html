@@ -70,10 +70,16 @@
               <span class='label-active'>您当前的军衔为：<strong>{% for cur in current %}{{ cur.name }}{% endfor %}</strong></span>
         </a>
         <ul>
+            <li>
+                <a data-label="{{ rank.name }}" href="/choose_rank?rank=-1"><i class='fa fa-suitcase'></i>&nbsp;</a>
+            </li>
+            <li>
+                <a data-label="{{ rank.name }}" href="/choose_rank?rank=0"><i class='fa fa-suitcase'></i> 随机</a>
+            </li>
             {% for rank in ranks %}
             <li>
                 <a data-label="{{ rank.name }}" href="/choose_rank?rank={{ rank.id }}"><i class='fa fa-suitcase'></i> {{ rank.name }}</a>
-             </li>
+            </li>
             {% endfor %}
         </ul>
     </div>

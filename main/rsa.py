@@ -4,7 +4,7 @@ import prime
 import time
 import re
 
-from . import models
+#from . import models
 
 def encryption(message, prk):
     '''Encrypt the int message into an int number using prk'''

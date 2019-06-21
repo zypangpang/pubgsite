@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-import csv, bisect, json, logging
+import csv, bisect, json, logging, random
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 # from django.core.files import File
@@ -59,6 +59,8 @@ def room(request):
 def choose_rank(request):
     rank = request.GET['rank']
     user_id = request.user.id
+    if user_id == 0:
+        user_id = random.randint(1,19)
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
     return redirect('main:choose-room')
 

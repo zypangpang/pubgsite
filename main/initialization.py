@@ -7,6 +7,7 @@ import sqlite3
 import sqlite3
 import os.path
 
+
 db_path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
 db_name = "db.sqlite3"
 
@@ -20,12 +21,18 @@ player_list = []
 column_set = ['id', 'rank', 'group_id', 'is_commander', 'position_x', 'position_y',
                        'public_key', 'private_key', 'mill_rand', 'mill_prime',
                        'room_id', 'user_id', 'rsa_n', 'vote_to']
+unreachable_map_point = []
 
 # set bound of map
 map_bound_x = 100
 map_bound_y = 100
 
 def constraint_check(attribute, value):
+    '''
+    :param attribute: name of the column
+    :param value: value of the column
+    :return: whether the value matches the constraints of attribute
+    '''
     if(attribute not in column_set):
         print('No such attribute')
         return False
@@ -205,11 +212,22 @@ def initialize():
 
     # initialize MILL
     for i in range(1, 6):
-        mill_rand = 'temp_mill_rand'
-        mill_prime = 'temp_mill_prime'
+        mill_rand = str(random.getrandbits(233))
+        mill_prime = "temp"
 
         set_player_attribute(i, 'mill_rand', mill_rand, 'string')
         set_player_attribute(i, 'mill_prime', mill_prime, 'string')
+
+    # initialize lagrange
+
+
+
+    position_list = []
+    for i in range(1, 6):
+        position_x = get_player_attribute(i, 'position_x')
+        position_y = get_player_attribute(i, 'position_y')
+        position_list.append((position_x, position_y))
+
 
 
 if __name__ == '__main__':

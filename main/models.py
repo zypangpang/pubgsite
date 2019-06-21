@@ -5,8 +5,10 @@ from django.contrib.auth.models import User
 # Create your models here.
 class Box(models.Model):
     password = models.IntegerField(default=None, null=True)
-    position_x = models.IntegerField(default=None)
-    position_y = models.IntegerField(default=None)
+    position_x = models.IntegerField(default=None, null=True)
+    position_y = models.IntegerField(default=None, null=True)
+    size = models.IntegerField(default=None, null=True)
+    least_num = models.IntegerField(default=None, null=True)
 
 
 class Room(models.Model):
@@ -34,6 +36,8 @@ class Users(models.Model):
     vote_to = models.IntegerField(default=None, null=True)
     box_key_x = models.IntegerField(default=None, null=True)
     box_key_y = models.IntegerField(default=None, null=True)
+    certificating_with = models.IntegerField(default=None, null=True)
+    opening_box = models.IntegerField(default=None, null=True)
 
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
 

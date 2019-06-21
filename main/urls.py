@@ -29,7 +29,7 @@ urlpatterns = [
     path('certificate', views.certificate, name='certificate'),
 
     # 选择指挥官接口
-    path('choose-commander', views.choose_cmd, name='choose-commander'),
+    path('game/commander', views.choose_cmd, name='commander'),
 
     # 开箱子接口
     path('open-box', views.open_box, name='open-box'),

@@ -82,7 +82,23 @@ def certificate(request):
 
 @login_required
 def choose_cmd(request):
-    return 1
+    if request.POST['vote'] == '1':
+        return_dict = {
+            'success': 1,
+            'need_vote': 0,
+            'info': 'choose commander success',
+            'candidates': ['junzhou', 'hainan'],
+            'commander': request.POST['vote_commander']
+        }
+    else:
+        return_dict = {
+            'success': 0,
+            'need_vote': 1,
+            'info': 'there are 2 soldiers with same level, so we need to vote for commander',
+            'candidates': ['junzhou', 'hainan'],
+            'commander': ''
+        }
+    return HttpResponse(json.dumps(return_dict))
 
 
 @login_required

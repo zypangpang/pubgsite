@@ -67,7 +67,7 @@
 
         <a class='toggle' href="javascript:void(0)">
             <i class='fa fa-suitcase'></i>
-              <span class='label-active'>{% for cur in current %}{{ cur.name }}{% endfor %}</span>
+              <span class='label-active'>您当前的军衔为：<strong>{% for cur in current %}{{ cur.name }}{% endfor %}</strong></span>
         </a>
         <ul>
             {% for rank in ranks %}

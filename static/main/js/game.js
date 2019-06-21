@@ -462,6 +462,7 @@ function showMessage(message,time_out,call_back) {
     if(call_back)
         call_back();
 }
+let waitingKey=true;
 /******************** auxiliary function for parachuting ****************/
 function update ()
 {
@@ -496,12 +497,15 @@ function update ()
     }
     if(openHouseState)
     {
+        if(!waitingKey)
+            return;
         if(keys.ESC.isDown)
         {
             dialog.setVisible(false);
             openHouseState=false;
         }
         else if(keys.SPACE.isDown){
+            waitingKey=false;
             showMessage('opening house');
             openHouse(openHouseId);
         }
@@ -779,35 +783,35 @@ let choose_commander=false;
 let vote_commander=false;
 function get_cur_state(url){
     $.ajax({
-            method: 'post',
-            url: url,
-            data: {
-                user_id:'zypang',
-                position_x:heroMapTile.x,
-                position_y:heroMapTile.y,
-                csrfmiddlewaretoken: window.CSRF_TOKEN
-            }, // serializes the form's elements.
-            success: function(data)
+        method: 'post',
+        url: url,
+        data: {
+            user_id:'zypang',
+            position_x:heroMapTile.x,
+            position_y:heroMapTile.y,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            cur_state=JSON.parse(data);
+
+            refreshScene(init_scene);
+
+            if(cur_state['event'])
+                processEvent(cur_state['event']);
+
+            if(cur_state['can_choose_commander'])
             {
-                cur_state=JSON.parse(data);
-
-                refreshScene(init_scene);
-
-                if(cur_state['event'])
-                    processEvent(cur_state['event']);
-
-                if(cur_state['can_choose_commander'])
-                {
-                    choose_commander=true;
-                    chooseCommander();
-                }
-
-                init_scene=false;
-            },
-            error:function (data) {
-                console.log('ajax error');
+                choose_commander=true;
+                chooseCommander();
             }
-        });
+
+            init_scene=false;
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
     /*scene.time.delayedCall(1000,function () {
         get_cur_state(STATE_URL);
     });*/
@@ -853,32 +857,32 @@ function processAuthentication(userBId)
 {
     console.log('auth');
     $.ajax({
-            method: 'post',
-            url: AUTH_URL,
-            data: {
-                userA_id:userid,
-                userB_id:userBId,
-                csrfmiddlewaretoken: window.CSRF_TOKEN
-            }, // serializes the form's elements.
-            success: function(data)
+        method: 'post',
+        url: AUTH_URL,
+        data: {
+            userA_id:userid,
+            userB_id:userBId,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let auth_result=JSON.parse(data);
+            showMessage(auth_result.info);
+            if(auth_result.success)
             {
-                let auth_result=JSON.parse(data);
-                showMessage(auth_result.info);
-                if(auth_result.success)
-                {
-                    skeletons[userBId].anim_name='known-idle';
-                }
-                else
-                    skeletons[userBId].setTint(0xff0000);
-
-                scene.time.delayedCall(1000,function () {
-                    authenticationState=false;
-                });
-            },
-            error:function (data) {
-                console.log('ajax error');
+                skeletons[userBId].anim_name='known-idle';
             }
-        });
+            else
+                skeletons[userBId].setTint(0xff0000);
+
+            scene.time.delayedCall(1000,function () {
+                authenticationState=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
 }
 let commander_candidates;
 function processVoteCommander(candidates) {
@@ -905,74 +909,74 @@ function chooseCommander()
 {
     console.log('choose commander');
     $.ajax({
-            method: 'post',
-            url: COMMANDER_URL,
-            data: {
-                user_id:userid,
-                vote:0,
-                csrfmiddlewaretoken: window.CSRF_TOKEN
-            }, // serializes the form's elements.
-            success: function(data)
+        method: 'post',
+        url: COMMANDER_URL,
+        data: {
+            user_id:userid,
+            vote:0,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
             {
-                let result=JSON.parse(data);
-                showMessage(result.info);
-                if(result.success)
-                {
-                    skeletons[result.commander].setTint(0xffd700);
+                skeletons[result.commander].setTint(0xffd700);
 
-                    scene.time.delayedCall(1000,function () {
-                        choose_commander=false;
-                    });
-                }
-                else
-                {
-                    if(result.need_vote)
-                    {
-                        vote_commander=true;
-                        processVoteCommander(result.candidates);
-                    }
-                }
-
-
-            },
-            error:function (data) {
-                console.log('ajax error');
+                scene.time.delayedCall(1000,function () {
+                    choose_commander=false;
+                });
             }
-        });
+            else
+            {
+                if(result.need_vote)
+                {
+                    vote_commander=true;
+                    processVoteCommander(result.candidates);
+                }
+            }
+
+
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
 }
 function vote_for_commander(commanderId)
 {
     console.log(commanderId);
     $.ajax({
-            method: 'post',
-            url: COMMANDER_URL,
-            data: {
-                user_id:userid,
-                vote:1,
-                vote_commander:commanderId,
-                csrfmiddlewaretoken: window.CSRF_TOKEN
-            }, // serializes the form's elements.
-            success: function(data)
+        method: 'post',
+        url: COMMANDER_URL,
+        data: {
+            user_id:userid,
+            vote:1,
+            vote_commander:commanderId,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
             {
-                let result=JSON.parse(data);
-                showMessage(result.info);
-                if(result.success)
-                {
-                    skeletons[result.commander].setTextTint(0xff6347);
-                    skeletons[result.commander].setTint(0xff6347);
-                }
-                commander_candidates.forEach(function (candidate) {
-                    skeletons[candidate].removeInteractive();
-                });
-
-                scene.time.delayedCall(1000,function () {
-                    choose_commander=false;
-                });
-            },
-            error:function (data) {
-                console.log('ajax error');
+                skeletons[result.commander].setTextTint(0xff6347);
+                skeletons[result.commander].setTint(0xff6347);
             }
-        });
+            commander_candidates.forEach(function (candidate) {
+                skeletons[candidate].removeInteractive();
+            });
+
+            scene.time.delayedCall(1000,function () {
+                choose_commander=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
 }
 function processGameOver(goodend) {
     gameOver=true;
@@ -995,38 +999,57 @@ function processGameOver(goodend) {
 function openHouse(houseName) {
     console.log('opening house '+houseName);
     $.ajax({
-            method: 'post',
-            url: OPEN_HOUSE_URL,
-            data: {
-                user_id:userid,
-                house_name:houseName,
-                csrfmiddlewaretoken: window.CSRF_TOKEN
-            }, // serializes the form's elements.
-            success: function(data)
+        method: 'post',
+        url: OPEN_HOUSE_URL,
+        data: {
+            user_id:userid,
+            house_name:houseName,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let ending=getRndInteger(0,2);
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
             {
-                let result=JSON.parse(data);
-                showMessage(result.info);
-                if(result.success)
-                {
-                    gameOver=true;
-                    scene.time.delayedCall(5000,function(){
-                        processGameOver(houseName=='good'?1:0);
-                    });
-                }
-
-                scene.time.delayedCall(1000,function () {
-                    openHouseState=false;
+                gameOver=true;
+                $.ajax({
+                    method:'post',
+                    url: GAME_OVER_URL,
+                    data:{
+                        user_id:userid,
+                        ending:ending,
+                        csrfmiddlewaretoken: window.CSRF_TOKEN
+                    },
+                    success: function (data) {
+                        console.log('game over sent');
+                    },
+                    error: function (data) {
+                        console.log('game over ajax error: '+data);
+                    }
                 });
-            },
-            error:function (data) {
-                console.log('ajax error');
+                scene.time.delayedCall(5000,function(){
+                    processGameOver(ending);
+                });
             }
-        });
+
+            scene.time.delayedCall(1000,function () {
+                openHouseState=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
 }
 function wait(ms){
-   let start = new Date().getTime();
-   let end = start;
-   while(end < start + ms) {
-     end = new Date().getTime();
-  }
+    let start = new Date().getTime();
+    let end = start;
+    while(end < start + ms) {
+        end = new Date().getTime();
+    }
+}
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min) ) + min;
 }

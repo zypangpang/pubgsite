@@ -10,5 +10,6 @@ urlpatterns = [
     path('game/auth/', views.authenticate, name='auth'),
     path('game/commander/', views.chooseCommander, name='commander'),
     path('game/house/', views.open_house, name='open_house'),
+    path('game/gameover/', views.game_over, name='game_over'),
     path('game/<slug:name>/', views.game, name='game'),
 ]

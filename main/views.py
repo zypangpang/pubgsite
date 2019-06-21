@@ -69,3 +69,6 @@ def open_house(request):
         'info':'open house success',
     }
     return HttpResponse(json.dumps(return_dict))
+
+def game_over(request):
+    pass

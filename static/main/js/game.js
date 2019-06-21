@@ -104,6 +104,8 @@ function preload ()
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
     this.load.image('background', base_path+'assets/background-2.jpg');
+    this.load.image('goodend', base_path+'assets/goodend.jpg');
+    this.load.image('badend', base_path+'assets/badend.png');
     this.load.spritesheet('helicopter',
         base_path+'assets/helicopter-spritesheet.png',
         { frameWidth: 423, frameHeight: 150 }
@@ -149,6 +151,9 @@ class Skeleton extends Phaser.GameObjects.Sprite {
     setVisible(visible){
         this.name_text.setVisible(visible);
         super.setVisible(visible);
+    }
+    setTextTint(tint){
+        this.name_text.setTint(tint);
     }
 }
 
@@ -213,7 +218,7 @@ function create ()
     keys = this.input.keyboard.addKeys('ESC,SPACE');
     /**************ONLY FOR DEBUG**************************/
     setAllVisible(true);
-    showMessage('game begin',5000);
+    showMessage('game begin');
     /**************ONLY FOR DEBUG**************************/
 
     this.cameras.main.setSize(1600, 800);
@@ -245,13 +250,18 @@ function createAnims()
         frameRate:20
     });
     scene.anims.create({
-        key: 'known-idle',
-        frames: scene.anims.generateFrameNumbers('skeleton', { start: 192, end: 195 }),
+        key: 'idle',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 224, end: 227 }),
         frameRate:5
     });
     scene.anims.create({
-        key: 'idle',
-        frames: scene.anims.generateFrameNumbers('skeleton', { start: 224, end: 227 }),
+        key: 'die',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 212, end: 219 }),
+        frameRate:5
+    });
+    scene.anims.create({
+        key: 'known-idle',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 192, end: 195 }),
         frameRate:5
     });
 
@@ -347,7 +357,8 @@ function drawTileIso(x,y,tileId)
     let tx=isoPt.x;
     let ty=isoPt.y;
     let tile = scene.add.image(tx, ty, 'tiles', tileId);
-    tile.depth = centerY + ty;
+    //tile.depth = centerY + ty;
+    tile.depth = 16;
     mapGroup.add(tile);
 }
 
@@ -404,7 +415,7 @@ function placeHouses ()
         let tmpPos = getCenterXYFromTileCoord(point[0],point[1]);
         //let house = scene.physics.add.staticImage(tmpPos.x,tmpPos.y, 'house');
         let house = scene.add.image(tmpPos.x, tmpPos.y, 'house');
-        house.depth = house.y + 118;
+        house.depth = house.y + 96;
         houseGroup.add(house);
         Houses[houseNames[i]]=house;
     }
@@ -454,6 +465,8 @@ function showMessage(message,time_out,call_back) {
 /******************** auxiliary function for parachuting ****************/
 function update ()
 {
+    if(gameOver)
+        return;
     if(init_scene)
         return;
     for(let plyer in skeletons)
@@ -477,6 +490,10 @@ function update ()
         }
     }
     /***************** parachuting animation ********************/
+    if(authenticationState)
+    {
+        return;
+    }
     if(openHouseState)
     {
         if(keys.ESC.isDown)
@@ -485,14 +502,18 @@ function update ()
             openHouseState=false;
         }
         else if(keys.SPACE.isDown){
-            showMessage('opening house',5000);
-            openHouseState=false;
+            showMessage('opening house');
+            openHouse(openHouseId);
         }
         return;
     }
-    if(authenticationState)
+    if(choose_commander)
     {
+        if(vote_commander)
+        {
 
+        }
+        return;
     }
 
     houseGroup.children.iterate(function (child) {
@@ -534,6 +555,7 @@ function update ()
 
 let authenticationState=false;
 let openHouseState=false;
+let openHouseId;
 function isWalkableSimple() {
     //let heroCoordinate=getTileCoordinates(heroMapPos,tileWidthHalf);
     let tdX=dX,tdY=dY;
@@ -555,11 +577,13 @@ function isWalkableSimple() {
     for(let plyer in playerCollides) {
         if (playerCollides[plyer].containsArray([nextX, nextY])) {
             console.log(nextX, nextY,plyer);
-            skeletons[plyer].setTint(0xff0000);
-
-            showMessage('authenticating '+plyer,undefined,function () {
-                authenticationState=true;
-            });
+            //skeletons[plyer].setTint(0xff0000);
+            if(skeletons[plyer].anim_name === 'idle') {
+                showMessage('authenticating ' + plyer, undefined, function () {
+                    authenticationState = true;
+                    processAuthentication(plyer);
+                });
+            }
 
             return false;
         }
@@ -570,6 +594,7 @@ function isWalkableSimple() {
 
             showMessage('Do you want to open this house?',undefined,function () {
                 openHouseState=true;
+                openHouseId=house;
             });
 
             console.log(nextX, nextY);
@@ -750,6 +775,8 @@ function refreshOtherPlayers(playerInfos) {
 /******************** player related functions *********************/
 let cur_state;
 let init_scene=true;
+let choose_commander=false;
+let vote_commander=false;
 function get_cur_state(url){
     $.ajax({
             method: 'post',
@@ -767,7 +794,13 @@ function get_cur_state(url){
                 refreshScene(init_scene);
 
                 if(cur_state['event'])
-                    processEvent();
+                    processEvent(cur_state['event']);
+
+                if(cur_state['can_choose_commander'])
+                {
+                    choose_commander=true;
+                    chooseCommander();
+                }
 
                 init_scene=false;
             },
@@ -775,9 +808,9 @@ function get_cur_state(url){
                 console.log('ajax error');
             }
         });
-    scene.time.delayedCall(1000,function () {
+    /*scene.time.delayedCall(1000,function () {
         get_cur_state(STATE_URL);
-    });
+    });*/
 }
 function refreshScene(first) {
     if(first)
@@ -789,7 +822,7 @@ function refreshScene(first) {
 
         let heroIsoPos=cartesianToIsometric(heroMapPos);
         player=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y,userid));
-        player.name_text.setColor('#ff0000');
+        player.name_text.setColor('#00ff00');
         player.play('idle');
 
         addOtherPlayers(cur_state['otherPlayers']);
@@ -800,6 +833,199 @@ function refreshScene(first) {
         refreshOtherPlayers(cur_state['otherPlayers']);
     }
 }
-function processEvent() {
+function processEvent(event) {
+    console.log('process event');
+    showMessage(event.info);
+    if(event.name=='vote_commander'){
+        processVoteCommander(event.candidates);
+    }
+    else if(event.name=='auth'){
+    }
+    else if(event.name=='open_house'){
+        openHouseState=true;
+    }
+    else if(event.name=='game_over'){
+        gameOver=true;
+        processGameOver(event.end);
+    }
+}
+function processAuthentication(userBId)
+{
+    console.log('auth');
+    $.ajax({
+            method: 'post',
+            url: AUTH_URL,
+            data: {
+                userA_id:userid,
+                userB_id:userBId,
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            }, // serializes the form's elements.
+            success: function(data)
+            {
+                let auth_result=JSON.parse(data);
+                showMessage(auth_result.info);
+                if(auth_result.success)
+                {
+                    skeletons[userBId].anim_name='known-idle';
+                }
+                else
+                    skeletons[userBId].setTint(0xff0000);
 
+                scene.time.delayedCall(1000,function () {
+                    authenticationState=false;
+                });
+            },
+            error:function (data) {
+                console.log('ajax error');
+            }
+        });
+}
+let commander_candidates;
+function processVoteCommander(candidates) {
+    choose_commander=true;
+    vote_commander=true;
+    commander_candidates=candidates;
+    candidates.forEach(function (userid) {
+        let sprite=skeletons[userid];
+        sprite.setInteractive();
+        //sprite.setTextTint(0x00ff00);
+        sprite.on('pointerover', function () {
+            sprite.setTint(0xff00ff);
+        });
+
+        sprite.on('pointerout', function () {
+            sprite.clearTint();
+        });
+        sprite.on('pointerdown',function () {
+            vote_for_commander(sprite.user_id);
+        });
+    });
+}
+function chooseCommander()
+{
+    console.log('choose commander');
+    $.ajax({
+            method: 'post',
+            url: COMMANDER_URL,
+            data: {
+                user_id:userid,
+                vote:0,
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            }, // serializes the form's elements.
+            success: function(data)
+            {
+                let result=JSON.parse(data);
+                showMessage(result.info);
+                if(result.success)
+                {
+                    skeletons[result.commander].setTint(0xffd700);
+
+                    scene.time.delayedCall(1000,function () {
+                        choose_commander=false;
+                    });
+                }
+                else
+                {
+                    if(result.need_vote)
+                    {
+                        vote_commander=true;
+                        processVoteCommander(result.candidates);
+                    }
+                }
+
+
+            },
+            error:function (data) {
+                console.log('ajax error');
+            }
+        });
+}
+function vote_for_commander(commanderId)
+{
+    console.log(commanderId);
+    $.ajax({
+            method: 'post',
+            url: COMMANDER_URL,
+            data: {
+                user_id:userid,
+                vote:1,
+                vote_commander:commanderId,
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            }, // serializes the form's elements.
+            success: function(data)
+            {
+                let result=JSON.parse(data);
+                showMessage(result.info);
+                if(result.success)
+                {
+                    skeletons[result.commander].setTextTint(0xff6347);
+                    skeletons[result.commander].setTint(0xff6347);
+                }
+                commander_candidates.forEach(function (candidate) {
+                    skeletons[candidate].removeInteractive();
+                });
+
+                scene.time.delayedCall(1000,function () {
+                    choose_commander=false;
+                });
+            },
+            error:function (data) {
+                console.log('ajax error');
+            }
+        });
+}
+function processGameOver(goodend) {
+    gameOver=true;
+    dialog.setVisible(false);
+    if(goodend)
+    {
+        scene.add.image(800,400,'goodend').depth=1500;
+    }
+    else
+    {
+        scene.add.image(800,400,'badend').depth=1500;
+        for(let plyer in skeletons)
+        {
+            skeletons[plyer].play('die',true);
+        }
+    }
+
+}
+function openHouse(houseName) {
+    console.log('opening house '+houseName);
+    $.ajax({
+            method: 'post',
+            url: OPEN_HOUSE_URL,
+            data: {
+                user_id:userid,
+                house_name:houseName,
+                csrfmiddlewaretoken: window.CSRF_TOKEN
+            }, // serializes the form's elements.
+            success: function(data)
+            {
+                let result=JSON.parse(data);
+                showMessage(result.info);
+                if(result.success)
+                {
+                    gameOver=true;
+                    scene.time.delayedCall(5000,function(){
+                        processGameOver(houseName=='good'?1:0);
+                    });
+                }
+
+                scene.time.delayedCall(1000,function () {
+                    openHouseState=false;
+                });
+            },
+            error:function (data) {
+                console.log('ajax error');
+            }
+        });
+}
+function wait(ms){
+   let start = new Date().getTime();
+   let end = start;
+   while(end < start + ms) {
+     end = new Date().getTime();
+  }
 }

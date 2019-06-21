@@ -9,6 +9,9 @@
         window.CSRF_TOKEN = "{{ csrf_token }}";
         STATE_URL="{% url 'main:get_state' %}";
         INIT_URL="{% url 'main:init' %}";
+        AUTH_URL="{% url 'main:auth' %}";
+        COMMANDER_URL="{% url 'main:commander' %}";
+        OPEN_HOUSE_URL="{% url 'main:open_house' %}";
     </script>
 </head>
 </html>

@@ -9,7 +9,7 @@ import sqlite3
 import os.path
 
 
-
+print('have a try')
 db_path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
 db_name = "db.sqlite3"
 
@@ -258,12 +258,18 @@ def initialize_position():
             position_y = random.randint(1, 24)
         set_player_attribute(i, 'position', (position_x, position_y), 'position')
 
+def change_system_status():
+    statement = 'UPDATE main_systemparam SET intValue=1'
+    conn.execute(statement)
+    conn.commit()
+
 def initialize():
     initialize_rank()
     initialize_rsa()
     initialize_lagrange()
     initialize_mill()
     initialize_position()
+    change_system_status()
 
 def get_all_positions(player_id):
     '''
@@ -294,3 +300,4 @@ def get_all_positions(player_id):
 if __name__ == '__main__':
     # print(unreachable_map_point)
     initialize()
+

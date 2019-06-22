@@ -307,6 +307,7 @@ def get_all_positions(player_id):
     return res_dict
 
 
+
 if __name__ == '__main__':
     # print(unreachable_map_point)
     # initialize()

@@ -89,9 +89,9 @@ def two_way_certificate(from_id, to_id):
             return 0
 
     for i in range(0,2):
-        e.append(user[i].public_key)
-        d.append(user[i].private_key)
-        n.append(user[i].rsa_n)
+        e.append(int(user[i].public_key))
+        d.append(int(user[i].private_key))
+        n.append(int(user[i].rsa_n))
         room_id.append(user[i].room.id)
         massage.append("hello, this is private no.{} from room {}, "
             "the time is {}".format(user_id[i], room_id[i], time.time()))

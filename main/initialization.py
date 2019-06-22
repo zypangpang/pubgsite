@@ -204,21 +204,24 @@ def initialize_box(count = 5):
 def initialize_rank():
     # initialize rank
     for i in range(1, 6):
-        rank = get_player_attribute(i, 'rank')
-        if (rank == -1):
-            set_player_attribute(i, 'rank', random.randint(1, 20), 'int')
+        user = models.Users.objects.get(id=i)
+        if (user.rank == -1):
+            user.rank = random.randint(1, 20)
+            user.save()
 
 
 def initialize_rsa():
     rsa_list = rsa.get_RSAKeyList(1024, 5)
     for i in range(1, 6):
-        public_key = str(rsa_list[i - 1]['puk'][1])
-        private_key = str(rsa_list[i - 1]['prk'][1])
-        rsa_n = str(rsa_list[i - 1]['puk'][0])
+        public_key = str(rsa_list[i - 1]['e'])
+        private_key = str(rsa_list[i - 1]['d'])
+        rsa_n = str(rsa_list[i - 1]['n'])
 
-        set_player_attribute(i, 'public_key', public_key, 'string')
-        set_player_attribute(i, 'private_key', private_key, 'string')
-        set_player_attribute(i, 'rsa_n', rsa_n, 'string')
+        user = models.Users.objects.get(id=i)
+        user.public_key = public_key
+        user.private_key = private_key
+        user.rsa_n = rsa_n
+
 
 def initialize_lagrange():
     num = 5  # create num keys
@@ -226,16 +229,11 @@ def initialize_lagrange():
 
     password, keys = lagrange.create_lagrange_key(40, num, least_num)
 
-    # update box password
-    statement = 'UPDATE main_box SET password={}'.format(password)
-    conn.execute(statement)
-    conn.commit()
-
-    # update user box_key_x and box_key_y
+    models.Box.objects.password = password
     for i in range(1, 6):
-        set_player_attribute(i, 'box_key_x', keys[i-1][0], 'int')
-        set_player_attribute(i, 'box_key_y', keys[i-1][1], 'int')
-
+        user = models.Users.objects.get(id=i)
+        user.box_key_x = keys[i-1][0]
+        user.box_key_y = keys[i-1][1]
 
 
 def initialize_mill():

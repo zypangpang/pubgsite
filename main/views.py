@@ -191,10 +191,14 @@ def get_cur_state(request):
         global_status.intValue = 2
         global_status.save()
 
-    return_dict={
+    can_choose_commander = 0
+    if (global_status.intValue in [2, 3]) and (user.vote_to <= 0):
+        can_choose_commander = 1
+
+    return_dict = {
         'player': username,
         'position': [user.position_x, user.position_y],
-        'can_choose_commander': 1 if global_status.intValue == 2 else 0,
+        'can_choose_commander': can_choose_commander,
         'otherPlayers': other_players
     }
 

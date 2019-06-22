@@ -59,6 +59,7 @@ def initialize_rsa():
         user.public_key = public_key
         user.private_key = private_key
         user.rsa_n = rsa_n
+        user.save()
 
 
 def initialize_lagrange():
@@ -72,6 +73,7 @@ def initialize_lagrange():
         user = models.Users.objects.get(id=i)
         user.box_key_x = keys[i-1][0]
         user.box_key_y = keys[i-1][1]
+        user.save()
 
 
 def initialize_mill():
@@ -82,6 +84,7 @@ def initialize_mill():
         user = models.Users.objects.get(id=i)
         user.mill_rand = mill_rand
         user.mill_prime = mill_prime
+        user.save()
 
 
 def initialize_position():
@@ -96,10 +99,12 @@ def initialize_position():
         user = models.Users.objects.get(id=i)
         user.position_x = position_x
         user.position_y = position_y
+        user.save()
 
 def change_system_status():
     global_state=models.SystemParam.objects.get(key="global_status")
     global_state.intValue = 1
+    global_state.save()
 
 def check_system_status():
     global_state=models.SystemParam.objects.get(key="global_status")
@@ -120,6 +125,7 @@ def get_all_positions(player_id):
     :return:
     '''
     if not check_system_status():
+        print('init')
         initialize()
     player_id = player_id - 1
     position_list = []
@@ -140,8 +146,10 @@ def get_all_positions(player_id):
             other_player[user_name_list[i]] = info
     res_dict['player'] = user_name_list[player_id]
     res_dict['position'] = [position_list[player_id][0], position_list[player_id][1]]
-    res_dict['other_players'] = other_player
+    res_dict['otherPlayers'] = other_player
+    print(res_dict)
     return json.dumps(res_dict)
+
 
 
 

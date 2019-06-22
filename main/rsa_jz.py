@@ -96,7 +96,7 @@ def two_way_certificate(from_id, to_id):
         massage.append("hello, this is private no.{} from room {}, "
             "the time is {}".format(user_id[i], room_id[i], time.time()))
         secret.append(segment_encryption(massage[i], 40, n[i], d[i]))
-        decrypted_massage.append(segment_decryption(massage[i], n[i], e[i]))
+        decrypted_massage.append(segment_decryption(secret[i], n[i], e[i]))
         try:
             a = re.search("room [0-9]+", decrypted_massage[i])
             decrypted_room_id.append(a.group(0))

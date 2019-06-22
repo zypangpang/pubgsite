@@ -212,10 +212,12 @@ def millToBob(a, bob):
 
 def millEncrypt(a, bob):
     a.mill_rand = random.getrandbits(233)
-    return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
+    return yynrsa.core.encrypt_int(a.mill_rand, bob.private_key, bob.rsa_n)
+    # return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
 
 def millDecrypt(a, msg):
-    return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
+    return yynrsa.core.decrypt_int(msg, a.private_key, a.rsa_n)
+    # return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
 
 def millToAlice(b, msg):
     rankList = list(range(1, 20))

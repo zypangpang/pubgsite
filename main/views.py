@@ -43,6 +43,17 @@ def game(request, name='firstGame'):
 
 
 @login_required
+def db_init(request):
+    models.Users.objects.update(is_commander=0, position_x=-1, position_y=-1,
+                                public_key=None, private_key=None, mill_rand=None, mill_prime=None,
+                                room_id=1, box_key_x=None, box_key_y=None, certificating_with=-1,
+                                opening_box=-1, rsa_n=None, vote_to=-1, rank=-1)
+    models.SystemParam.objects.filter(key="global_status").update(intValue=0)
+    models.Box.objects.update(password=None)
+    return redirect('main:choose-room')
+
+
+@login_required
 def choose_room(request):
     userDtb = models.User.objects.raw("select a.id, a.name as room_name, group_concat(c.username) as user_name from main_room a left join main_users b on a.id = b.room_id left join auth_user c on c.id = b.user_id group by a.id")
     context = {}
@@ -66,8 +77,9 @@ def room(request):
 def choose_rank(request):
     rank = int(request.GET['rank'])
     user_id = request.user.id
-    if rank < 1 or rank > 19:
-        rank = random.randint(1,19)
+    if rank != -1:
+        if rank < 1 or rank > 19:
+            rank = random.randint(1, 19)
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
     return redirect('main:choose-room')
 

@@ -179,7 +179,7 @@
             if (this.text) this.text.destroy();
 
             let x = this.padding + 10;
-            let y = this._getGameHeight() - this.windowHeight - this.padding + 5;
+            let y = this._getGameHeight() - this.windowHeight - this.padding + 10;
 
             this.text = this.scene.make.text({
                 x,

@@ -2,15 +2,20 @@
     type: Phaser.AUTO,
     width: 1600,
     height: 800,
-    backgroundColor: '#42271a',
+    backgroundColor: '#1c2b31',
     //backgroundColor: '#244d1b',
-    parent: 'phaser-example',
+    //parent: 'phaser-example',
     physics: {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 }
         }
     },
+    /*plugins: {
+        global: [
+            { key: 'DialogModalPlugin', plugin: DialogModalPlugin, start: true }
+        ]
+    },*/
     scene: {
         preload: preload,
         create: create,
@@ -18,6 +23,7 @@
     }
 };
 
+/**************** global variables ************************/
 let game = new Phaser.Game(config);
 let dX=0,dY=0;
 let heroMapPos;
@@ -27,13 +33,16 @@ let layer,mapwidth,mapheight;
 //let heroWidth=128;
 let player;
 let heroMapTile;
-let skeletons = [];
+let skeletons = {};
 let tileWidthHalf;
 let scene;
 let tilesets;
 let centerX,centerY;
 //let first=true;
 let gameOver=false;
+let parachuting=true;
+let keys;
+/**************** global variables ************************/
 
 
 
@@ -55,6 +64,11 @@ let anims = {
         endFrame: 4,
         speed: 0.2
     },
+    known_idle:
+        {
+            startFrame:96,
+            endFrame:100,
+        },
     walk: {
         startFrame: 4,
         endFrame: 12,
@@ -78,9 +92,10 @@ let anims = {
 };
 
 
+let base_path='/static/main/';
+
 function preload ()
 {
-    let base_path='/static/main/';
 
     //this.load.image('sky', base_path+'assets/sky.png');
 
@@ -88,70 +103,125 @@ function preload ()
     this.load.spritesheet('tiles', base_path+'assets/isometric-grass-and-water.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
-    this.load.image('background', base_path+'assets/background.png');
-    this.load.spritesheet('dude',
-        base_path+'assets/dude.png',
-        { frameWidth: 32, frameHeight: 48 }
+    this.load.image('background', base_path+'assets/background-2.jpg');
+    this.load.image('goodend', base_path+'assets/goodend.jpg');
+    this.load.image('badend', base_path+'assets/badend.png');
+    this.load.spritesheet('helicopter',
+        base_path+'assets/helicopter-spritesheet.png',
+        { frameWidth: 423, frameHeight: 150 }
     );
+
+    this.load.scenePlugin('DialogModalPlugin', base_path+'js/dialog_plugin.js','dialogModalPlugin','dialogModal');
 }
 
 
+let userid;
 
+class Skeleton extends Phaser.GameObjects.Sprite {
+    constructor(scene, x, y,user_name,anim_name){
+        super(scene, x, y-16, 'skeleton', 224);
+
+        if(anim_name)
+            this.anim_name=anim_name;
+        else
+            this.anim_name='idle';
+
+        this.TEXT_X_OFFSET=0;
+        this.TEXT_Y_OFFSET=45;
+        this.OBJECT_Y_OFFSET=16;
+        this.name_text=scene.add.text(x-this.TEXT_X_OFFSET, y-this.TEXT_Y_OFFSET, user_name, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold'});
+        this.name_text.setOrigin(0.5);
+
+        this.user_id=user_name;
+
+        this.x = x;
+        this.y = y;
+
+        this.depth = y + 64;
+        this.name_text.depth=y+64;
+    }
+    move(next_x,next_y){
+        this.x=next_x;
+        this.y=next_y-this.OBJECT_Y_OFFSET;
+        this.name_text.x=next_x-this.TEXT_X_OFFSET;
+        this.name_text.y=next_y-this.OBJECT_Y_OFFSET-this.TEXT_Y_OFFSET;
+        this.depth=next_y+64;
+        this.name_text.depth=next_y+64;
+    }
+    setVisible(visible){
+        this.name_text.setVisible(visible);
+        super.setVisible(visible);
+    }
+    setTextTint(tint){
+        this.name_text.setTint(tint);
+    }
+}
+
+let dialog;
+let helicopter;
+let mapGroup;
+let houseGroup;
+let jumpSkeleton;
+let test_parachting=false;
 function create ()
 {
+
     scene = this;
-
-    //this.add.image(400, 300, 'sky');
-    //bkg=this.physics.add.staticImage(800,400,'background');
-
-    //grass=this.physics.add.staticGroup();
-    //water=this.physics.add.staticGroup();
 
     createAnims();
 
+    //add background
+    this.add.image(800,400,'background');
 
+    /**************** create objects for parachuting **********************/
+    if(test_parachting) {
+        helicopter = this.physics.add.sprite(0, 100, 'helicopter', 0);
+        helicopter.depth = 1200;
+        helicopter.setVelocityX(200);
+        jumpSkeleton = this.physics.add.sprite(800, 150, 'skeleton', 224);
+        jumpSkeleton.depth = 1500;
+        jumpSkeleton.setVisible(false);
+    }
+    /**************** create objects for parachuting **********************/
+
+    /**************** create dialog modal to show message **********************/
+    dialog=this.dialogModal;
+    dialog.init();
+    dialog.toggleWindow();
+    /**************** create dialog modal to show message **********************/
+
+
+    /**************** create cursor key for movement **********************/
     cursors = this.input.keyboard.createCursorKeys();
+    /**************** create cursor key for movement **********************/
 
-    //  Our Skeleton class
-    let Skeleton = new Phaser.Class({
+    /**************** create group for convenience **********************/
+    mapGroup=this.add.group();
+    houseGroup=this.add.group();
+    /**************** create group for convenience **********************/
 
-        Extends: Phaser.GameObjects.Sprite,
-        //Extends: Phaser.Physics.Arcade.Sprite,
 
-        initialize:
-
-        function Skeleton (scene, x, y)
-        {
-            this.x = x;
-            this.y = y;
-
-            Phaser.GameObjects.Sprite.call(this, scene, x, y, 'skeleton', 224);
-
-            this.depth = y + 64;
-
-            //scene.time.delayedCall(this.anim.speed * 1000, this.changeFrame, [], this);
-        },
-    });
-
+    /**************** build map and house **********************/
     buildMap();
-
-    heroMapTile=new Phaser.Geom.Point(3,15);
-    heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
-
-    let heroIsoPos=cartesianToIsometric(heroMapPos);
-
-    skeletons.push(this.add.existing(new Skeleton(this, heroIsoPos.x, heroIsoPos.y)));
-    player=skeletons[0];
-    player.anims.play('idle',true);
-
     placeHouses();
-    //this.physics.add.collider(player,bkg);
+    /**************** build map and house **********************/
 
-    skeletons.push(this.add.existing(new Skeleton(this, 760, 100,)));
-    skeletons.push(this.add.existing(new Skeleton(this, 800, 140,)));
+    mapGroup.toggleVisible();
+    houseGroup.toggleVisible();
 
+    heroMapTile=new Phaser.Geom.Point(0,0);
+    /**************** put player **********************/
+    //requestAndRefreshPlayerInfo();
+    get_cur_state(INIT_URL);
+    /**************** put player **********************/
 
-    this.cameras.main.setSize(1600, 1200);
+    keys = this.input.keyboard.addKeys('ESC,SPACE');
+    /**************ONLY FOR DEBUG**************************/
+    setAllVisible(true);
+    showMessage('game begin');
+    /**************ONLY FOR DEBUG**************************/
+
+    this.cameras.main.setSize(1600, 800);
 
     /*this.input.on('pointerdown',function (pointer) {
         console.log(pointer.x,pointer.y);
@@ -160,6 +230,7 @@ function create ()
 
     // this.cameras.main.scrollX = 800;
 }
+
 
 function createAnims()
 {
@@ -174,9 +245,24 @@ function createAnims()
     southWest: { offset: 224, x: -2, y: 1, opposite: 'northEast' }*/
 
     scene.anims.create({
+        key: 'heli-fly',
+        frames: scene.anims.generateFrameNumbers('helicopter', { start: 0, end: 3 }),
+        frameRate:20
+    });
+    scene.anims.create({
         key: 'idle',
         frames: scene.anims.generateFrameNumbers('skeleton', { start: 224, end: 227 }),
-        frameRate:10
+        frameRate:5
+    });
+    scene.anims.create({
+        key: 'die',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 212, end: 219 }),
+        frameRate:5
+    });
+    scene.anims.create({
+        key: 'known-idle',
+        frames: scene.anims.generateFrameNumbers('skeleton', { start: 192, end: 195 }),
+        frameRate:5
     });
 
     scene.anims.create({
@@ -239,6 +325,14 @@ function createAnims()
     const Layer = map.createStaticLayer("Tile Layer 1", tileset, 0, 0);
 }*/
 
+/****************** auxiliary function to get map tile property*********************/
+Array.prototype.containsArray = function(val) {
+    let hash = {};
+    for(let i=0; i<this.length; i++) {
+        hash[this[i]] = i;
+    }
+    return hash.hasOwnProperty(val);
+};
 function checkProperty(name)
 {
     return function (prpty) {
@@ -248,9 +342,12 @@ function checkProperty(name)
 function getProperty(tile,name) {
     return tile.properties.find(checkProperty(name)).value;
 }
+/****************** auxiliary function to get map tile property*********************/
 
 function drawTileIso(x,y,tileId)
 {
+    /*********function to draw map tile on the scene*************/
+
     let cartPt=new Phaser.Geom.Point();//This is here for better code readability.
     cartPt.x=x*tileWidthHalf;
     cartPt.y=y*tileWidthHalf;
@@ -260,8 +357,11 @@ function drawTileIso(x,y,tileId)
     let tx=isoPt.x;
     let ty=isoPt.y;
     let tile = scene.add.image(tx, ty, 'tiles', tileId);
-    tile.depth = centerY + ty;
+    //tile.depth = centerY + ty;
+    tile.depth = 16;
+    mapGroup.add(tile);
 }
+
 function buildMap ()
 {
     //  Parse the data out of the map
@@ -290,40 +390,141 @@ function buildMap ()
         }
     }
 }
-function getCenterXYFromTileCoord(tx,ty) {
-    return cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(tx,ty),tileWidthHalf));
-    //let tmpPos=new Phaser.Geom.Point();
-    //tmpPos.x=centerX+(tx-ty)*tileWidthHalf;
-    //tmpPos.y=centerY+(tx+ty)/2*tileWidthHalf;
-    //return tmpPos;
-}
+
+/********************* place house related ******************************/
 let HouseCoords=[[3,21],[21,3]];
-let HouseCollidesCoords=[];
+let HouseCollidesCoords={};
 let houseAuxArrayX= [ 0,1,2,3 ];
 let houseAuxArrayY= [ 1,2,3 ];
+let houseNames=['good','bad'];
+let Houses={};
 function placeHouses ()
 {
     let len=HouseCoords.length;
     for(let i=0;i<len;++i) {
         let point=HouseCoords[i];
         console.log(point);
+        HouseCollidesCoords[houseNames[i]]=[];
         for(let j=0;j<houseAuxArrayX.length;++j)
         {
             for(let k=0;k<houseAuxArrayY.length;++k)
             {
-                HouseCollidesCoords.push([point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]]);
+                HouseCollidesCoords[houseNames[i]].push([point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]]);
             }
         }
         let tmpPos = getCenterXYFromTileCoord(point[0],point[1]);
         //let house = scene.physics.add.staticImage(tmpPos.x,tmpPos.y, 'house');
         let house = scene.add.image(tmpPos.x, tmpPos.y, 'house');
-        house.depth = house.y + 118;
+        house.depth = house.y + 96;
+        houseGroup.add(house);
+        Houses[houseNames[i]]=house;
     }
     console.log(HouseCollidesCoords);
 }
-
+/********************* place house related ******************************/
+function setAllVisible(visible){
+    mapGroup.children.iterate(function (child) {
+        child.setVisible(visible);
+    });
+    houseGroup.children.iterate(function (child) {
+        child.setVisible(visible);
+    });
+    for (let plyer in skeletons) {
+        skeletons[plyer].setVisible(visible);
+    }
+}
+/******************** auxiliary function for parachuting ****************/
+function jump() {
+    jumpSkeleton.setVisible(true);
+    jumpSkeleton.setGravityY(150);
+    scene.time.delayedCall(1000,heliFlyOut,[],scene);
+}
+function heliDestroy() {
+    helicopter.destroy();
+    console.log('heli destroy');
+}
+function heliFlyOut() {
+    helicopter.setVelocityX(100);
+    mapGroup.toggleVisible();
+    houseGroup.toggleVisible();
+    scene.time.delayedCall(10000,heliDestroy,[],scene);
+    //dialog.toggleWindow();
+    //dialog.setText('hello world ljdlshflsdl');
+}
+function showMessage(message,time_out,call_back) {
+    dialog.setVisible(true);
+    dialog.setText(message,true);
+    if(time_out) {
+        scene.time.delayedCall(time_out,function () {
+            dialog.setVisible(false);
+        })
+    }
+    if(call_back)
+        call_back();
+}
+let waitingKey=true;
+/******************** auxiliary function for parachuting ****************/
 function update ()
 {
+    if(gameOver)
+        return;
+    if(init_scene)
+        return;
+    for(let plyer in skeletons)
+    {
+        skeletons[plyer].play(skeletons[plyer].anim_name,true);
+    }
+    /***************** parachuting animation ********************/
+    if(test_parachting) {
+        if (helicopter.anims)
+            helicopter.anims.play('heli-fly', true);
+        if (parachuting && Math.round(helicopter.x) >= 800) {
+            parachuting = false;
+            helicopter.setVelocityX(0);
+            scene.time.delayedCall(1000, jump, [], scene);
+        }
+        if (jumpSkeleton && jumpSkeleton.y > 500) {
+            jumpSkeleton.destroy();
+            for (let plyer in skeletons) {
+                skeletons[plyer].setVisible(true);
+            }
+        }
+    }
+    /***************** parachuting animation ********************/
+    if(authenticationState)
+    {
+        return;
+    }
+    if(openHouseState)
+    {
+        if(!waitingKey)
+            return;
+        if(keys.ESC.isDown)
+        {
+            dialog.setVisible(false);
+            openHouseState=false;
+        }
+        else if(keys.SPACE.isDown){
+            waitingKey=false;
+            showMessage('opening house');
+            openHouse(openHouseId);
+        }
+        return;
+    }
+    if(choose_commander)
+    {
+        if(vote_commander)
+        {
+
+        }
+        return;
+    }
+
+    houseGroup.children.iterate(function (child) {
+        child.clearTint();
+    });
+
+    /***************** hero move ********************/
     detectKeyInput();
     //if no key is pressed then stop else play walking animation
     if (dY === 0 && dX === 0)
@@ -333,8 +534,8 @@ function update ()
     }else{
         player.anims.play(facing,true);
     }
-    //return;
-    //check if we are walking into a wall else move hero in 2D
+
+    //check if we are walking into an object else move hero in 2D
     if (isWalkableSimple())
     {
         heroMapPos.x +=  heroSpeed * dX;
@@ -342,44 +543,23 @@ function update ()
         let heroIsoPos= cartesianToIsometric(heroMapPos);
         //console.log(heroIsoPos);
         //console.log(heroMapPos);
-        player.x=heroIsoPos.x;
-        player.y=heroIsoPos.y-16;
+        player.move(heroIsoPos.x,heroIsoPos.y);
+        //player.x=heroIsoPos.x;
+        //player.y=heroIsoPos.y-16;
 
         //depth correct
-        player.depth=heroIsoPos.y+64;
+        //player.depth=heroIsoPos.y+64;
 
         //get the new hero map tile
         heroMapTile=getTileCoordinates(heroMapPos,tileWidthHalf);
     }
+    /***************** hero move ********************/
 }
 
-function cartesianToIsometric(cartPt){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=centerX+cartPt.x-cartPt.y;
-    tempPt.y=centerY+(cartPt.x+cartPt.y)/2;
-    return (tempPt);
-}
 
-function isometricToCartesian(isoPt){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=(2*isoPt.y+isoPt.x)/2;
-    tempPt.y=(2*isoPt.y-isoPt.x)/2;
-    return (tempPt);
-}
-
-function getTileCoordinates(cartPt, tileHeight){
-    let tempPt=new Phaser.Geom.Point();
-    tempPt.x=Math.floor(cartPt.x/tileHeight);
-    tempPt.y=Math.floor(cartPt.y/tileHeight);
-    return(tempPt);
-}
-Array.prototype.containsArray = function(val) {
-    let hash = {};
-    for(let i=0; i<this.length; i++) {
-        hash[this[i]] = i;
-    }
-    return hash.hasOwnProperty(val);
-};
+let authenticationState=false;
+let openHouseState=false;
+let openHouseId;
 function isWalkableSimple() {
     //let heroCoordinate=getTileCoordinates(heroMapPos,tileWidthHalf);
     let tdX=dX,tdY=dY;
@@ -398,10 +578,32 @@ function isWalkableSimple() {
         console.log(nextX,nextY);
         return false;
     }
-    if(HouseCollidesCoords.containsArray([nextX,nextY]))
-    {
-        console.log(nextX,nextY);
-        return false;
+    for(let plyer in playerCollides) {
+        if (playerCollides[plyer].containsArray([nextX, nextY])) {
+            console.log(nextX, nextY,plyer);
+            //skeletons[plyer].setTint(0xff0000);
+            if(skeletons[plyer].anim_name === 'idle') {
+                showMessage('authenticating ' + plyer, undefined, function () {
+                    authenticationState = true;
+                    processAuthentication(plyer);
+                });
+            }
+
+            return false;
+        }
+    }
+    for(let house in HouseCollidesCoords) {
+        if (HouseCollidesCoords[house].containsArray([nextX, nextY])) {
+            Houses[house].setTint(0x00ff00);
+
+            showMessage('Do you want to open this house?',undefined,function () {
+                openHouseState=true;
+                openHouseId=house;
+            });
+
+            console.log(nextX, nextY);
+            return false;
+        }
     }
     let id=layer[nextY*mapheight+nextX]-1;
     //if(layer[newTileCorner1.y*mapheight+newTileCorner1.x==1){
@@ -480,9 +682,374 @@ function detectKeyInput(){//assign direction for character & set x,y speed compo
         }
     }
 }
+
+/******************** auxiliary function to deal with isometric projection *********************/
 function getCartesianFromTileCoordinates(tilePt, tileHeight){
     let tempPt=new Phaser.Geom.Point();
     tempPt.x=tilePt.x*tileHeight;
     tempPt.y=tilePt.y*tileHeight;
     return(tempPt);
+}
+function cartesianToIsometric(cartPt){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=centerX+cartPt.x-cartPt.y;
+    tempPt.y=centerY+(cartPt.x+cartPt.y)/2;
+    return (tempPt);
+}
+
+function isometricToCartesian(isoPt){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=(2*isoPt.y+isoPt.x)/2;
+    tempPt.y=(2*isoPt.y-isoPt.x)/2;
+    return (tempPt);
+}
+
+function getTileCoordinates(cartPt, tileHeight){
+    let tempPt=new Phaser.Geom.Point();
+    tempPt.x=Math.floor(cartPt.x/tileHeight);
+    tempPt.y=Math.floor(cartPt.y/tileHeight);
+    return(tempPt);
+}
+function getCenterXYFromTileCoord(tx,ty) {
+    return cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(tx,ty),tileWidthHalf));
+}
+/******************** auxiliary function to deal with isometric projection *********************/
+
+/******************** player related functions *********************/
+function requestAndRefreshPlayerInfo() {
+    // Add current player
+    heroMapTile=new Phaser.Geom.Point(3,15);
+    heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
+
+    let heroIsoPos=cartesianToIsometric(heroMapPos);
+    skeletons[userid]=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y,userid));
+    player=skeletons[userid];
+    player.name_text.setColor('#ff0000');
+
+    let playerInfos={
+        p1:{
+            position:[2,5]
+        },
+        p2:{
+            position: [9,21]
+        }
+    };
+    addOtherPlayers(playerInfos);
+
+    for(let plyer in skeletons)
+    {
+        skeletons[plyer].setVisible(false);
+    }
+}
+
+function addOtherPlayers(playerInfos) {
+    for(plyerId in playerInfos)
+    {
+        let plyerCoord=playerInfos[plyerId].position;
+        let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
+
+        if(playerInfos[plyerId].known)
+            skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId,'known-idle'));
+        else
+            skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId));
+    }
+    refreshOtherPlayers(playerInfos);
+
+}
+let playerCollides={};
+let playerAuxArrayX= [ 0,1 ];
+let playerAuxArrayY= [ 0,1 ];
+
+function refreshOtherPlayers(playerInfos) {
+    for(plyerId in playerInfos)
+    {
+        let plyerCoord=playerInfos[plyerId].position;
+        let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
+
+        skeletons[plyerId].move(playerIsoPos.x,playerIsoPos.y);
+
+        for (let j = 0; j < playerAuxArrayX.length; ++j) {
+            for (let k = 0; k < playerAuxArrayY.length; ++k) {
+                playerCollides[plyerId]=[];
+                playerCollides[plyerId].push([plyerCoord[0] + playerAuxArrayX[j], plyerCoord[1] + playerAuxArrayY[k]]);
+            }
+        }
+    }
+}
+/******************** player related functions *********************/
+let cur_state;
+let init_scene=true;
+let choose_commander=false;
+let vote_commander=false;
+function get_cur_state(url){
+    $.ajax({
+        method: 'post',
+        url: url,
+        data: {
+            user_id:'zypang',
+            position_x:heroMapTile.x,
+            position_y:heroMapTile.y,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            cur_state=JSON.parse(data);
+
+            refreshScene(init_scene);
+
+            if(cur_state['event'])
+                processEvent(cur_state['event']);
+
+            if(cur_state['can_choose_commander'])
+            {
+                choose_commander=true;
+                chooseCommander();
+            }
+
+            init_scene=false;
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
+    /*scene.time.delayedCall(1000,function () {
+        get_cur_state(STATE_URL);
+    });*/
+}
+function refreshScene(first) {
+    if(first)
+    {
+        userid=cur_state['player'];
+        // Add current player
+        heroMapTile=new Phaser.Geom.Point(cur_state['position'][0],cur_state['position'][1]);
+        heroMapPos=getCartesianFromTileCoordinates(heroMapTile,tileWidthHalf);
+
+        let heroIsoPos=cartesianToIsometric(heroMapPos);
+        player=scene.add.existing(new Skeleton(scene, heroIsoPos.x, heroIsoPos.y,userid));
+        player.name_text.setColor('#00ff00');
+        player.play('idle');
+
+        addOtherPlayers(cur_state['otherPlayers']);
+        //console.log('length:'+Object.keys(skeletons).length);
+    }
+    else
+    {
+        refreshOtherPlayers(cur_state['otherPlayers']);
+    }
+}
+function processEvent(event) {
+    console.log('process event');
+    showMessage(event.info);
+    if(event.name=='vote_commander'){
+        processVoteCommander(event.candidates);
+    }
+    else if(event.name=='auth'){
+    }
+    else if(event.name=='open_house'){
+        openHouseState=true;
+    }
+    else if(event.name=='game_over'){
+        gameOver=true;
+        processGameOver(event.end);
+    }
+}
+function processAuthentication(userBId)
+{
+    console.log('auth');
+    $.ajax({
+        method: 'post',
+        url: AUTH_URL,
+        data: {
+            userA_id:userid,
+            userB_id:userBId,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let auth_result=JSON.parse(data);
+            showMessage(auth_result.info);
+            if(auth_result.success)
+            {
+                skeletons[userBId].anim_name='known-idle';
+            }
+            else
+                skeletons[userBId].setTint(0xff0000);
+
+            scene.time.delayedCall(1000,function () {
+                authenticationState=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
+}
+let commander_candidates;
+function processVoteCommander(candidates) {
+    choose_commander=true;
+    vote_commander=true;
+    commander_candidates=candidates;
+    candidates.forEach(function (userid) {
+        let sprite=skeletons[userid];
+        sprite.setInteractive();
+        //sprite.setTextTint(0x00ff00);
+        sprite.on('pointerover', function () {
+            sprite.setTint(0xff00ff);
+        });
+
+        sprite.on('pointerout', function () {
+            sprite.clearTint();
+        });
+        sprite.on('pointerdown',function () {
+            vote_for_commander(sprite.user_id);
+        });
+    });
+}
+function chooseCommander()
+{
+    console.log('choose commander');
+    $.ajax({
+        method: 'post',
+        url: COMMANDER_URL,
+        data: {
+            user_id:userid,
+            vote:0,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
+            {
+                skeletons[result.commander].setTint(0xffd700);
+
+                scene.time.delayedCall(1000,function () {
+                    choose_commander=false;
+                });
+            }
+            else
+            {
+                if(result.need_vote)
+                {
+                    vote_commander=true;
+                    processVoteCommander(result.candidates);
+                }
+            }
+
+
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
+}
+function vote_for_commander(commanderId)
+{
+    console.log(commanderId);
+    $.ajax({
+        method: 'post',
+        url: COMMANDER_URL,
+        data: {
+            user_id:userid,
+            vote:1,
+            vote_commander:commanderId,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
+            {
+                skeletons[result.commander].setTextTint(0xff6347);
+                skeletons[result.commander].setTint(0xff6347);
+            }
+            commander_candidates.forEach(function (candidate) {
+                skeletons[candidate].removeInteractive();
+            });
+
+            scene.time.delayedCall(1000,function () {
+                choose_commander=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
+}
+function processGameOver(goodend) {
+    gameOver=true;
+    dialog.setVisible(false);
+    if(goodend)
+    {
+        scene.add.image(800,400,'goodend').depth=1500;
+    }
+    else
+    {
+        scene.add.image(800,400,'badend').depth=1500;
+        for(let plyer in skeletons)
+        {
+            skeletons[plyer].play('die',true);
+        }
+        player.play('die',true);
+    }
+
+}
+function openHouse(houseName) {
+    console.log('opening house '+houseName);
+    $.ajax({
+        method: 'post',
+        url: OPEN_HOUSE_URL,
+        data: {
+            user_id:userid,
+            house_name:houseName,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            let ending=getRndInteger(0,2);
+            let result=JSON.parse(data);
+            showMessage(result.info);
+            if(result.success)
+            {
+                gameOver=true;
+                $.ajax({
+                    method:'post',
+                    url: GAME_OVER_URL,
+                    data:{
+                        user_id:userid,
+                        ending:ending,
+                        csrfmiddlewaretoken: window.CSRF_TOKEN
+                    },
+                    success: function (data) {
+                        console.log('game over sent');
+                    },
+                    error: function (data) {
+                        console.log('game over ajax error: '+data);
+                    }
+                });
+                scene.time.delayedCall(5000,function(){
+                    processGameOver(ending);
+                });
+            }
+
+            scene.time.delayedCall(1000,function () {
+                openHouseState=false;
+            });
+        },
+        error:function (data) {
+            console.log('ajax error');
+        }
+    });
+}
+function wait(ms){
+    let start = new Date().getTime();
+    let end = start;
+    while(end < start + ms) {
+        end = new Date().getTime();
+    }
+}
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min) ) + min;
 }

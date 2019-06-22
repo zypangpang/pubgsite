@@ -780,8 +780,12 @@ function addOtherPlayers(playerInfos) {
         let plyerCoord=playerInfos[plyerId].position;
         let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
 
+        console.log(playerInfos[plyerId].known);
         if(playerInfos[plyerId].known)
+        {
+            console.log('known');
             skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId,'known-idle'));
+        }
         else
             skeletons[plyerId]=scene.add.existing(new Skeleton(scene, playerIsoPos.x, playerIsoPos.y,plyerId));
     }
@@ -795,10 +799,15 @@ let playerAuxArrayY= [ 0,1 ];
 function refreshOtherPlayers(playerInfos) {
     for(plyerId in playerInfos)
     {
+        //console.log('plyerId: '+plyerId);
         let plyerCoord=playerInfos[plyerId].position;
         let playerIsoPos=cartesianToIsometric(getCartesianFromTileCoordinates(new Phaser.Geom.Point(plyerCoord[0],plyerCoord[1]),tileWidthHalf));
 
         skeletons[plyerId].move(playerIsoPos.x,playerIsoPos.y);
+        if(playerInfos[plyerId].known)
+        {
+            skeletons[plyerId].anim_name='known-idle';
+        }
 
         for (let j = 0; j < playerAuxArrayX.length; ++j) {
             for (let k = 0; k < playerAuxArrayY.length; ++k) {
@@ -827,6 +836,7 @@ function get_cur_state(url){
         success: function(data)
         {
             cur_state=JSON.parse(data);
+            //console.log(cur_state);
 
             refreshScene(init_scene);
 
@@ -847,9 +857,9 @@ function get_cur_state(url){
             console.log('ajax error');
         }
     });
-    /*scene.time.delayedCall(1000,function () {
+    scene.time.delayedCall(5000,function () {
         get_cur_state(STATE_URL);
-    });*/
+    });
 }
 function refreshScene(first) {
     if(first)
@@ -959,7 +969,14 @@ function chooseCommander()
             showMessage(result.info);
             if(result.success)
             {
-                skeletons[result.commander].setTint(0xffd700);
+                if(result.commander==userid){
+                    player.setTint(0xffd700);
+                    player.setTextTint(0xffd700);
+                }
+                else {
+                    skeletons[result.commander].setTint(0xffd700);
+                    skeletons[result.commander].setTextTint(0xffd700);
+                }
                 have_commander=true;
 
                 scene.time.delayedCall(1000,function () {
@@ -1039,9 +1056,11 @@ function openHouse(houseName) {
         }, // serializes the form's elements.
         success: function(data)
         {
+            console.log(data);
             let ending=getRndInteger(0,2);
             let result=JSON.parse(data);
             showMessage(result.info);
+            waitingKey=true;
             if(result.success)
             {
                 gameOver=true;

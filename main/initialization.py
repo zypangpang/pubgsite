@@ -54,15 +54,16 @@ def constraint_check(attribute, value):
         return True
 
 
+'''
 def set_player_attribute(player_id, attribute, updated_value, value_type):
-    '''
+    
     :param player_id: id of the updated player
     :param attribute: the attribute to update
     :param updated_value: new value of the attribute
     :param value_type: type of the value,
             three of them should be specified: string, bool
     :return: true if successful otherwise false
-    '''
+    
     if (attribute not in column_set):
         print('No such attribute')
         return False
@@ -100,11 +101,11 @@ def set_player_attribute(player_id, attribute, updated_value, value_type):
         return True
 
 def get_player_attribute(player_id, attribute = '*'):
-    '''
+    
     :param player_id: id of the searched player
     :param attribute: the attribute you want to find
     :return: value of attribute if found otherwise None
-    '''
+    
 
     if(attribute not in column_set):
         print('No such attribute')
@@ -122,6 +123,7 @@ def get_player_attribute(player_id, attribute = '*'):
     else:
         print('{} player with the same id {}. So return None'.format(len(rows), player_id))
         return None
+'''
 
 def print_all_player_status():
     cursor = conn.execute("select * from \"main_users\"")
@@ -137,69 +139,6 @@ def print_all_box_status():
     for row in rows:
         print(row)
 
-'''
-def initialize_player(count = 5):
-
-    # generate {count} number of rsa keys
-    rsa_list = rsa.get_RSAKeyList(1024, count)
-    # generate millionaire data
-    # To be Done #
-
-    statement = "INSERT INTO main_users VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
-
-    player_list = []
-    # generate players and save to player_list
-    for i in range(count):
-        id = i
-        rank = random.randint(1, 20) # [1, rank_num ]
-        group_id = i # To be investigated
-
-        is_commander = False
-
-        position_x = random.randint(0, map_bound_x)
-        position_y = random.randint(0, map_bound_y)
-
-        public_key = str(rsa_list[i]['puk'][1])
-        private_key = str(rsa_list[i]['prk'][1])
-
-        mill_rand = "temp" # To be investigated
-        mill_prime = "tempaswell" # To be investigated
-
-        room_id = random.randint(1, 4) # To be investigated
-        user_id = str(i) # To be investigated
-
-        rsa_n = str(rsa_list[i]['puk'][0])
-        vote_to = -1
-        player = (id, rank, group_id, is_commander, position_x, position_y,
-                       public_key, private_key, mill_rand, mill_prime,
-                       room_id, user_id, rsa_n, vote_to)
-        player_list.append(player)
-
-    conn.executemany(statement, player_list)
-    conn.commit()
-'''
-
-'''
-def initialize_box(count = 5):
-    statement = "INSERT INTO main_box VALUES(?,?,?,?) "
-
-    box_list = []
-
-    # generate boxes and save to box_list
-    for i in range(count):
-        id = i
-
-        password = "temp"
-
-        position_x = random.randint(0, map_bound_x)
-        position_y = random.randint(0, map_bound_y)
-
-        box = (id, password, position_x, position_y)
-        box_list.append(box)
-
-    conn.executemany(statement, box_list)
-    conn.commit()
-'''
 
 def initialize_rank():
     # initialize rank
@@ -241,8 +180,10 @@ def initialize_mill():
         mill_rand = str(random.getrandbits(233))
         mill_prime = "temp"
 
-        set_player_attribute(i, 'mill_rand', mill_rand, 'string')
-        set_player_attribute(i, 'mill_prime', mill_prime, 'string')
+        user = models.Users.objects.get(id=i)
+        user.mill_rand = mill_rand
+        user.mill_prime = mill_prime
+
 
 def initialize_position():
     # initialize position
@@ -252,21 +193,19 @@ def initialize_position():
         while (not constraint_check('position', (position_x, position_y))):
             position_x = random.randint(1, 24)
             position_y = random.randint(1, 24)
-        set_player_attribute(i, 'position', (position_x, position_y), 'position')
+
+        user = models.Users.objects.get(id=i)
+        user.position_x = position_x
+        user.position_y = position_y
 
 def change_system_status():
-    statement = 'UPDATE main_systemparam SET intValue=1'
-    conn.execute(statement)
-    conn.commit()
+    global_state=models.SystemParam.objects.get(key="global_status")
+    global_state.intValue = 1
 
 def check_system_status():
     global_state=models.SystemParam.objects.get(key="global_status")
     return global_state.intValue != 0
-    #statement = "select intValue from main_systemparam"
-    #cursor = conn.execute(statement)
-    #conn.commit()
-    #rows = cursor.fetchall()
-    #return (int(rows[0][0]) != 0)
+
 
 def initialize():
     change_system_status()
@@ -287,8 +226,9 @@ def get_all_positions(player_id):
     player_id = player_id - 1
     position_list = []
     for i in range(1, 6):
-        position_x = get_player_attribute(i, 'position_x')
-        position_y = get_player_attribute(i, 'position_y')
+        user = models.Users.objects.get(id=i)
+        position_x = user.position_x
+        position_y = user.position_y
         position_list.append((position_x, position_y))
 
     user_name_list = ['pangzaiyu', 'yangyinuo', 'xujunzhou', 'gaoming', 'panhainan']

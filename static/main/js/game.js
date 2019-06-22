@@ -40,7 +40,7 @@ let tilesets;
 let centerX,centerY;
 //let first=true;
 let gameOver=false;
-let parachuting=true;
+let heliMoving=true;
 let keys;
 /**************** global variables ************************/
 
@@ -162,7 +162,6 @@ let helicopter;
 let mapGroup;
 let houseGroup;
 let jumpSkeleton;
-let test_parachting=false;
 function create ()
 {
 
@@ -174,11 +173,12 @@ function create ()
     this.add.image(800,400,'background');
 
     /**************** create objects for parachuting **********************/
-    if(test_parachting) {
+    if(parachuting) {
         helicopter = this.physics.add.sprite(0, 100, 'helicopter', 0);
         helicopter.depth = 1200;
-        helicopter.setVelocityX(200);
-        jumpSkeleton = this.physics.add.sprite(800, 150, 'skeleton', 224);
+        helicopter.setVelocityX(HELI_SPEED);
+        heliMoving=true;
+        jumpSkeleton = this.physics.add.sprite(800, 150, 'skeleton', 192);
         jumpSkeleton.depth = 1500;
         jumpSkeleton.setVisible(false);
     }
@@ -216,9 +216,12 @@ function create ()
     /**************** put player **********************/
 
     keys = this.input.keyboard.addKeys('ESC,SPACE');
+
     /**************ONLY FOR DEBUG**************************/
-    setAllVisible(true);
-    showMessage('game begin');
+    if(!parachuting) {
+        setAllVisible(true);
+        showMessage('game begin');
+    }
     /**************ONLY FOR DEBUG**************************/
 
     this.cameras.main.setSize(1600, 800);
@@ -360,6 +363,11 @@ function drawTileIso(x,y,tileId)
     //tile.depth = centerY + ty;
     tile.depth = 16;
     mapGroup.add(tile);
+
+    //ONLY FOR DEBUG
+    /*if(getProperty(tilesets[tileId],'collides')===true) {
+        console.log(x,y);
+    }*/
 }
 
 function buildMap ()
@@ -392,7 +400,7 @@ function buildMap ()
 }
 
 /********************* place house related ******************************/
-let HouseCoords=[[3,21],[21,3]];
+let HouseCoords=[[3,21],[20,3]];
 let HouseCollidesCoords={};
 let houseAuxArrayX= [ 0,1,2,3 ];
 let houseAuxArrayY= [ 1,2,3 ];
@@ -403,13 +411,14 @@ function placeHouses ()
     let len=HouseCoords.length;
     for(let i=0;i<len;++i) {
         let point=HouseCoords[i];
-        console.log(point);
+        //console.log(point);
         HouseCollidesCoords[houseNames[i]]=[];
         for(let j=0;j<houseAuxArrayX.length;++j)
         {
             for(let k=0;k<houseAuxArrayY.length;++k)
             {
                 HouseCollidesCoords[houseNames[i]].push([point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]]);
+                //console.log(point[0]+houseAuxArrayX[j],point[1]+houseAuxArrayY[k]);
             }
         }
         let tmpPos = getCenterXYFromTileCoord(point[0],point[1]);
@@ -419,7 +428,7 @@ function placeHouses ()
         houseGroup.add(house);
         Houses[houseNames[i]]=house;
     }
-    console.log(HouseCollidesCoords);
+    //console.log(HouseCollidesCoords);
 }
 /********************* place house related ******************************/
 function setAllVisible(visible){
@@ -432,21 +441,24 @@ function setAllVisible(visible){
     for (let plyer in skeletons) {
         skeletons[plyer].setVisible(visible);
     }
+    player.setVisible(visible);
 }
 /******************** auxiliary function for parachuting ****************/
 function jump() {
     jumpSkeleton.setVisible(true);
     jumpSkeleton.setGravityY(150);
+    mapGroup.toggleVisible();
+    houseGroup.toggleVisible();
+
     scene.time.delayedCall(1000,heliFlyOut,[],scene);
 }
 function heliDestroy() {
     helicopter.destroy();
     console.log('heli destroy');
 }
+let HELI_SPEED=200;
 function heliFlyOut() {
-    helicopter.setVelocityX(100);
-    mapGroup.toggleVisible();
-    houseGroup.toggleVisible();
+    helicopter.setVelocityX(HELI_SPEED);
     scene.time.delayedCall(10000,heliDestroy,[],scene);
     //dialog.toggleWindow();
     //dialog.setText('hello world ljdlshflsdl');
@@ -463,34 +475,54 @@ function showMessage(message,time_out,call_back) {
         call_back();
 }
 let waitingKey=true;
+let jumped=false;
+let parachuting=true;
 /******************** auxiliary function for parachuting ****************/
 function update ()
 {
     if(gameOver)
         return;
+
+    /***************** parachuting animation ********************/
+    if (helicopter.anims)
+            helicopter.anims.play('heli-fly', true);
+    if(parachuting) {
+        if (heliMoving) {
+            if (Math.round(helicopter.x) >= 800) {
+                helicopter.setVelocityX(0);
+                heliMoving = false;
+            } else
+                return;
+        }
+        if (init_scene)
+            return;
+        if (!jumped) {
+            jumped = true;
+            scene.time.delayedCall(1000, jump, [], scene);
+        }
+        if (jumpSkeleton) {
+            jumpSkeleton.play('known-idle',true);
+            if (jumpSkeleton.y > 600) {
+                jumpSkeleton.destroy();
+                for (let plyer in skeletons) {
+                    skeletons[plyer].setVisible(true);
+                }
+                player.setVisible(true);
+                parachuting=false;
+                showMessage('伞兵模拟作战开始\n请使用上下左右键来移动角色\n祝好运')
+            } else
+                return;
+        }
+    }
+    /***************** parachuting animation ********************/
+
     if(init_scene)
         return;
     for(let plyer in skeletons)
     {
         skeletons[plyer].play(skeletons[plyer].anim_name,true);
     }
-    /***************** parachuting animation ********************/
-    if(test_parachting) {
-        if (helicopter.anims)
-            helicopter.anims.play('heli-fly', true);
-        if (parachuting && Math.round(helicopter.x) >= 800) {
-            parachuting = false;
-            helicopter.setVelocityX(0);
-            scene.time.delayedCall(1000, jump, [], scene);
-        }
-        if (jumpSkeleton && jumpSkeleton.y > 500) {
-            jumpSkeleton.destroy();
-            for (let plyer in skeletons) {
-                skeletons[plyer].setVisible(true);
-            }
-        }
-    }
-    /***************** parachuting animation ********************/
+
     if(authenticationState)
     {
         return;
@@ -781,6 +813,7 @@ let cur_state;
 let init_scene=true;
 let choose_commander=false;
 let vote_commander=false;
+let have_commander=false;
 function get_cur_state(url){
     $.ajax({
         method: 'post',
@@ -797,13 +830,15 @@ function get_cur_state(url){
 
             refreshScene(init_scene);
 
-            if(cur_state['event'])
+            if(cur_state['event'] && !checkInEvent())
                 processEvent(cur_state['event']);
 
-            if(cur_state['can_choose_commander'])
+            if(cur_state['can_choose_commander'] && !checkInEvent())
             {
-                choose_commander=true;
-                chooseCommander();
+                if(!have_commander) {
+                    choose_commander = true;
+                    chooseCommander();
+                }
             }
 
             init_scene=false;
@@ -831,6 +866,8 @@ function refreshScene(first) {
 
         addOtherPlayers(cur_state['otherPlayers']);
         //console.log('length:'+Object.keys(skeletons).length);
+
+        setAllVisible(false);
     }
     else
     {
@@ -923,6 +960,7 @@ function chooseCommander()
             if(result.success)
             {
                 skeletons[result.commander].setTint(0xffd700);
+                have_commander=true;
 
                 scene.time.delayedCall(1000,function () {
                     choose_commander=false;
@@ -935,9 +973,9 @@ function chooseCommander()
                     vote_commander=true;
                     processVoteCommander(result.candidates);
                 }
+                else
+                    scene.time.delayedCall(1000,chooseCommander);
             }
-
-
         },
         error:function (data) {
             console.log('ajax error');
@@ -947,6 +985,9 @@ function chooseCommander()
 function vote_for_commander(commanderId)
 {
     console.log(commanderId);
+    commander_candidates.forEach(function (candidate) {
+        skeletons[candidate].removeInteractive();
+    });
     $.ajax({
         method: 'post',
         url: COMMANDER_URL,
@@ -960,21 +1001,11 @@ function vote_for_commander(commanderId)
         {
             let result=JSON.parse(data);
             showMessage(result.info);
-            if(result.success)
-            {
-                skeletons[result.commander].setTextTint(0xff6347);
-                skeletons[result.commander].setTint(0xff6347);
-            }
-            commander_candidates.forEach(function (candidate) {
-                skeletons[candidate].removeInteractive();
-            });
-
-            scene.time.delayedCall(1000,function () {
-                choose_commander=false;
-            });
+            chooseCommander();
         },
         error:function (data) {
-            console.log('ajax error');
+            showMessage('网络连接失败，1秒后重试');
+            scene.time.delayedCall(1000,function(){vote_for_commander(commanderId)});
         }
     });
 }
@@ -1042,6 +1073,10 @@ function openHouse(houseName) {
             console.log('ajax error');
         }
     });
+}
+function checkInEvent()
+{
+    return authenticationState || openHouseState || choose_commander || vote_commander || gameOver;
 }
 function wait(ms){
     let start = new Date().getTime();

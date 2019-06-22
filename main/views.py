@@ -57,10 +57,10 @@ def room(request):
 
 @login_required
 def choose_rank(request):
-    rank = request.GET['rank']
+    rank = int(request.GET['rank'])
     user_id = request.user.id
-    if user_id < 1 or user_id > 19:
-        user_id = random.randint(1,19)
+    if rank < 1 or rank > 19:
+        rank = random.randint(1,19)
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
     return redirect('main:choose-room')
 

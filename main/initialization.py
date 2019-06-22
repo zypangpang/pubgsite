@@ -1,10 +1,11 @@
-from .import rsa_jz as rsa
 import json
-from . import lagrange
 import random
 import sqlite3
 import os.path
 from . import models
+from . import lagrange
+from . import rsa_jz as rsa
+
 
 
 print('have a try')
@@ -18,10 +19,7 @@ conn.commit()
 
 
 player_list = []
-column_set = ['id', 'rank', 'group_id', 'is_commander', 'position_x', 'position_y',
-                       'public_key', 'private_key', 'mill_rand', 'mill_prime',
-                       'room_id', 'user_id', 'rsa_n', 'vote_to', 'box_key_x','box_key_y',
-                       'position']
+
 unreachable_map_point = []
 
 def read_unreachable_map_point():
@@ -31,120 +29,21 @@ def read_unreachable_map_point():
 
 read_unreachable_map_point()
 
-def constraint_check(attribute, value):
+def constraint_check(value):
     '''
     :param attribute: name of the column
     :param value: value of the column
     :return: whether the value matches the constraints of attribute
     '''
-    if(attribute not in column_set):
-        print('No such attribute')
-        return False
-
-    if(attribute == 'rank'):
-        return (value >= 1 and value <= 19)
-    elif(attribute == 'room_id'):
-        return (value >= 0 and value <= 3)
-    elif(attribute == 'position'):
-        flag = ((value[0], value[1]) not in unreachable_map_point)
-        return (flag and value[0] >= 1 and value[0] <= 23 and value[1] >= 1 and value[1] <= 23)
-    elif(attribute == 'mill_rand' or attribute == 'mill_prime'):
-        return (value != None and value != "")
-    else:
-        return True
-
-
-'''
-def set_player_attribute(player_id, attribute, updated_value, value_type):
-    
-    :param player_id: id of the updated player
-    :param attribute: the attribute to update
-    :param updated_value: new value of the attribute
-    :param value_type: type of the value,
-            three of them should be specified: string, bool
-    :return: true if successful otherwise false
-    
-    if (attribute not in column_set):
-        print('No such attribute')
-        return False
-    if (not constraint_check(attribute, updated_value)):
-        print('Invalid updated value {}'.format(updated_value))
-        return False
-
-
-    # check if player with player_id exists in main_users
-    cursor = conn.execute("select count(*) from \"main_users\" where id = {}".format(player_id))
-    conn.commit()
-    count = cursor.fetchall()[0][0]
-    if(count != 1):
-        if(count == 0):
-            print('No such player')
-        else:
-            print('{} player with the same id {}. So return None'.format(count, player_id))
-        return False
-    else:
-        # set the value of the attribute of player with player_id
-        if(value_type == 'bool'):
-            if(updated_value == 'TRUE' or updated_value == 'True' or updated_value == 'true'):
-                statement = 'UPDATE main_users SET {}=1 where id={}'.format(attribute, player_id)
-            else:
-                statement = 'UPDATE main_users SET {}=0 where id={}'.format(attribute, player_id)
-        elif(value_type == 'string'):
-            statement = 'UPDATE main_users SET {}=\"{}\" where id={}'.format(attribute, updated_value, player_id)
-        elif(value_type == 'position'):
-            statement = 'UPDATE main_users SET position_x={}, position_y={} where id={}'.format(updated_value[0], updated_value[1], player_id)
-        else:
-            statement = 'UPDATE main_users SET {}={} where id={}'.format(attribute, updated_value, player_id)
-        print(statement)
-        cursor = conn.execute(statement)
-        conn.commit()
-        return True
-
-def get_player_attribute(player_id, attribute = '*'):
-    
-    :param player_id: id of the searched player
-    :param attribute: the attribute you want to find
-    :return: value of attribute if found otherwise None
-    
-
-    if(attribute not in column_set):
-        print('No such attribute')
-        return None
-
-    statement = "select {} from \"main_users\" where id = {}".format(attribute, player_id)
-    cursor = conn.execute(statement)
-    conn.commit()
-    rows = cursor.fetchall()
-    if(len(rows) == 0):
-        print("No such player")
-        return None
-    elif(len(rows) == 1):
-        return rows[0][0]
-    else:
-        print('{} player with the same id {}. So return None'.format(len(rows), player_id))
-        return None
-'''
-
-def print_all_player_status():
-    cursor = conn.execute("select * from \"main_users\"")
-    conn.commit()
-    rows = cursor.fetchall()
-    for row in rows:
-        print(row)
-
-def print_all_box_status():
-    cursor = conn.execute("select * from \"main_box\"")
-    conn.commit()
-    rows = cursor.fetchall()
-    for row in rows:
-        print(row)
+    flag = ((value[0], value[1]) not in unreachable_map_point)
+    return (flag and value[0] >= 1 and value[0] <= 23 and value[1] >= 1 and value[1] <= 23)
 
 
 def initialize_rank():
     # initialize rank
     for i in range(1, 6):
         user = models.Users.objects.get(id=i)
-        if (user.rank == -1):
+        if user.rank == -1:
             user.rank = random.randint(1, 20)
             user.save()
 
@@ -190,7 +89,7 @@ def initialize_position():
     for i in range(1, 6):
         position_x = random.randint(1, 24)
         position_y = random.randint(1, 24)
-        while (not constraint_check('position', (position_x, position_y))):
+        while (not constraint_check((position_x, position_y))):
             position_x = random.randint(1, 24)
             position_y = random.randint(1, 24)
 
@@ -220,8 +119,7 @@ def get_all_positions(player_id):
     :param player_id: the player_id is expected to be in [0, 4]
     :return:
     '''
-
-    if(not check_system_status()):
+    if not check_system_status():
         initialize()
     player_id = player_id - 1
     position_list = []
@@ -235,7 +133,7 @@ def get_all_positions(player_id):
     res_dict = {}
     other_player = {}
     for i in range(0, 5):
-        if(i != player_id):
+        if i != player_id:
             info = {}
             info['position'] = [position_list[i][0], position_list[i][1]]
             info['known'] = 0
@@ -246,8 +144,4 @@ def get_all_positions(player_id):
     return json.dumps(res_dict)
 
 
-if __name__ == '__main__':
-    # print(unreachable_map_point)
-    # initialize()
-    print(check_system_status())
 

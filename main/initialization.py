@@ -1,12 +1,10 @@
-import rsa
-import lagrange
+from .import rsa_jz as rsa
+import json
+from . import lagrange
 import random
-import prime
-import time
-import re
-import sqlite3
 import sqlite3
 import os.path
+from . import models
 
 
 print('have a try')
@@ -27,7 +25,7 @@ column_set = ['id', 'rank', 'group_id', 'is_commander', 'position_x', 'position_
 unreachable_map_point = []
 
 def read_unreachable_map_point():
-    positions = [line.strip().split() for line in open('forbiddenCoord.txt').readlines()]
+    positions = [line.strip().split() for line in open('main/forbiddenCoord.txt').readlines()]
     for position in positions:
         unreachable_map_point.append((int(position[0]), int(position[1])))
 
@@ -263,19 +261,32 @@ def change_system_status():
     conn.execute(statement)
     conn.commit()
 
+def check_system_status():
+    global_state=models.SystemParam.objects.get(key="global_status")
+    return global_state.intValue != 0
+    #statement = "select intValue from main_systemparam"
+    #cursor = conn.execute(statement)
+    #conn.commit()
+    #rows = cursor.fetchall()
+    #return (int(rows[0][0]) != 0)
+
 def initialize():
+    change_system_status()
     initialize_rank()
     initialize_rsa()
     initialize_lagrange()
     initialize_mill()
     initialize_position()
-    change_system_status()
 
 def get_all_positions(player_id):
     '''
     :param player_id: the player_id is expected to be in [0, 4]
     :return:
     '''
+
+    if(not check_system_status()):
+        initialize()
+    player_id = player_id - 1
     position_list = []
     for i in range(1, 6):
         position_x = get_player_attribute(i, 'position_x')
@@ -294,10 +305,11 @@ def get_all_positions(player_id):
     res_dict['player'] = user_name_list[player_id]
     res_dict['position'] = [position_list[player_id][0], position_list[player_id][1]]
     res_dict['other_players'] = other_player
-    return res_dict
+    return json.dumps(res_dict)
 
 
 if __name__ == '__main__':
     # print(unreachable_map_point)
-    initialize()
+    # initialize()
+    print(check_system_status())
 

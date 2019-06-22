@@ -1,10 +1,10 @@
 # coding:utf-8
 import random
-import prime
+from . import prime
 import time
 import re
 
-import models
+from . import models
 
 #public_key = e, private_key = d, rsa_n = n
 

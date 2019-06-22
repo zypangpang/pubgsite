@@ -110,26 +110,6 @@ def authenticate(request):
     user.save()
     return HttpResponse(json.dumps(return_dict))
 
-def chooseCommander(request):
-    #TODO: waiting for yangyinuo to complete this
-    if request.POST['vote']=='1':
-        return_dict={
-            'success':1,
-            'need_vote':0,
-            'info':'choose commander success',
-            'candidates':['junzhou','hainan'],
-            'commander':request.POST['vote_commander']
-        }
-    else:
-        return_dict={
-            'success':0,
-            'need_vote':1,
-            'info':'there are 2 soldiers with same level, so we need to vote for commander',
-            'candidates':['junzhou','hainan'],
-            'commander':''
-        }
-    return HttpResponse(json.dumps(return_dict))
-
 def open_house(request):
     user_id = request.user.id
     user = models.Users.objects.get(user_id=request.user.id)

@@ -389,11 +389,13 @@ def millToBob(a, bob):
     return millEncrypt(a,bob) - a.rank
 
 def millEncrypt(a, bob):
-    a.mill_rand = random.getrandbits(233)
-    return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
+    a.mill_rand = str(random.getrandbits(233))
+    return yynrsa.core.encrypt_int(int(a.mill_rand), int(bob.private_key), int(bob.rsa_n))
+    # return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
 
 def millDecrypt(a, msg):
-    return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
+    return yynrsa.core.decrypt_int(msg, int(a.private_key), int(a.rsa_n))
+    # return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
 
 def millToAlice(b, msg):
     rankList = list(range(1, 20))
@@ -403,7 +405,7 @@ def millToAlice(b, msg):
         possibleNumList.append(millDecrypt(b,x))
     # possibleNumList = [self.millDecrypt(x) for x in randList]
     msgToA = millCalMsgToA(b,possibleNumList)
-    return msgToA, b.mill_prime
+    return msgToA, int(b.mill_prime)
 
 def genMillRand(n):
     (tpub, tpri) = yynrsa.newkeys(n)
@@ -415,8 +417,8 @@ def millCalMsgToA(b, pnl):
     while notDone:
         notDone = False
         (tpub, tpri) = yynrsa.newkeys(200)
-        b.mill_prime = tpri.p
-        msgToA = [x % b.mill_prime for x in pnl]
+        b.mill_prime = str(tpri.p)
+        msgToA = [x % int(b.mill_prime) for x in pnl]
         for i in range(19):
             if notDone:
                 break
@@ -428,7 +430,7 @@ def millCalMsgToA(b, pnl):
                     break
             if msgToA[i] < 2:
                 notDone = True
-            if msgToA[i] > b.mill_prime - 3:
+            if msgToA[i] > int(b.mill_prime) - 3:
                 notDone = True
     for i in range(19):
         if i < b.rank:
@@ -438,7 +440,7 @@ def millCalMsgToA(b, pnl):
     return msgToA
 
 def millGetResult(a, msg, prime):
-    remainder = a.mill_rand % prime
+    remainder = int(a.mill_rand) % prime
     if remainder == msg[a.rank]:
         return 0
     elif remainder > msg[a.rank]:

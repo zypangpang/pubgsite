@@ -227,6 +227,10 @@ def millToAlice(b, msg):
     msgToA = millCalMsgToA(b,possibleNumList)
     return msgToA, b.mill_prime
 
+def genMillRand(n):
+    (tpub, tpri) = yynrsa.newkeys(n)
+    return tpri.p
+
 def millCalMsgToA(b, pnl):
     notDone = True
     msgToA = []

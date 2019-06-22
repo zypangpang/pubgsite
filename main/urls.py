@@ -5,7 +5,6 @@ from . import views
 app_name='main'
 
 urlpatterns = [
-
     path('', views.choose_room, name='choose-room'),
 
     # 游戏主页面
@@ -22,6 +21,9 @@ urlpatterns = [
 
     # 进入房间页面
     path('room', views.room, name='room'),
+
+    # 数据库初始化
+    path('db_init', views.db_init, name='db_init'),
 
     # 进入房间页面
     path('choose_rank', views.choose_rank, name='choose_rank'),

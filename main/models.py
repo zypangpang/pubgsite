@@ -23,6 +23,7 @@ class Users(models.Model):
         return self.user.username
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user_name = models.CharField(default="", null=True, max_length=255)
     rank = models.IntegerField(default=-1, null=True)
     group_id = models.IntegerField(default=None)
     is_commander = models.BooleanField(default=None, null=True)

@@ -1,4 +1,5 @@
 import rsa
+import lagrange
 import random
 import prime
 import time
@@ -8,10 +9,11 @@ import sqlite3
 import os.path
 
 
+
 db_path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
 db_name = "db.sqlite3"
 
-conn = sqlite3.connect(db_path + "\\" + db_name)
+conn = sqlite3.connect(db_path + "/" + db_name)
 
 conn.commit()
 
@@ -20,12 +22,16 @@ conn.commit()
 player_list = []
 column_set = ['id', 'rank', 'group_id', 'is_commander', 'position_x', 'position_y',
                        'public_key', 'private_key', 'mill_rand', 'mill_prime',
-                       'room_id', 'user_id', 'rsa_n', 'vote_to']
+                       'room_id', 'user_id', 'rsa_n', 'vote_to', 'box_key_x','box_key_y',
+                       'position']
 unreachable_map_point = []
 
-# set bound of map
-map_bound_x = 100
-map_bound_y = 100
+def read_unreachable_map_point():
+    positions = [line.strip().split() for line in open('forbiddenCoord.txt').readlines()]
+    for position in positions:
+        unreachable_map_point.append((int(position[0]), int(position[1])))
+
+read_unreachable_map_point()
 
 def constraint_check(attribute, value):
     '''
@@ -41,10 +47,9 @@ def constraint_check(attribute, value):
         return (value >= 1 and value <= 19)
     elif(attribute == 'room_id'):
         return (value >= 0 and value <= 3)
-    elif(attribute == 'position_x'):
-        return (value >= 0 and value <= map_bound_x)
-    elif(attribute == 'position_y'):
-        return (value >= 0 and value <= map_bound_y)
+    elif(attribute == 'position'):
+        flag = ((value[0], value[1]) not in unreachable_map_point)
+        return (flag and value[0] >= 1 and value[0] <= 23 and value[1] >= 1 and value[1] <= 23)
     elif(attribute == 'mill_rand' or attribute == 'mill_prime'):
         return (value != None and value != "")
     else:
@@ -62,9 +67,10 @@ def set_player_attribute(player_id, attribute, updated_value, value_type):
     '''
     if (attribute not in column_set):
         print('No such attribute')
-        return None
+        return False
     if (not constraint_check(attribute, updated_value)):
         print('Invalid updated value {}'.format(updated_value))
+        return False
 
 
     # check if player with player_id exists in main_users
@@ -86,6 +92,8 @@ def set_player_attribute(player_id, attribute, updated_value, value_type):
                 statement = 'UPDATE main_users SET {}=0 where id={}'.format(attribute, player_id)
         elif(value_type == 'string'):
             statement = 'UPDATE main_users SET {}=\"{}\" where id={}'.format(attribute, updated_value, player_id)
+        elif(value_type == 'position'):
+            statement = 'UPDATE main_users SET position_x={}, position_y={} where id={}'.format(updated_value[0], updated_value[1], player_id)
         else:
             statement = 'UPDATE main_users SET {}={} where id={}'.format(attribute, updated_value, player_id)
         print(statement)
@@ -131,8 +139,8 @@ def print_all_box_status():
     for row in rows:
         print(row)
 
+'''
 def initialize_player(count = 5):
-    '''initialize {count} players and save to player_list'''
 
     # generate {count} number of rsa keys
     rsa_list = rsa.get_RSAKeyList(1024, count)
@@ -171,7 +179,9 @@ def initialize_player(count = 5):
 
     conn.executemany(statement, player_list)
     conn.commit()
+'''
 
+'''
 def initialize_box(count = 5):
     statement = "INSERT INTO main_box VALUES(?,?,?,?) "
 
@@ -191,26 +201,46 @@ def initialize_box(count = 5):
 
     conn.executemany(statement, box_list)
     conn.commit()
+'''
 
-def initialize():
+def initialize_rank():
     # initialize rank
     for i in range(1, 6):
         rank = get_player_attribute(i, 'rank')
-        if(rank == -1):
+        if (rank == -1):
             set_player_attribute(i, 'rank', random.randint(1, 20), 'int')
 
-    # initialize RSA
+
+def initialize_rsa():
     rsa_list = rsa.get_RSAKeyList(1024, 5)
     for i in range(1, 6):
-        public_key = str(rsa_list[i-1]['puk'][1])
-        private_key = str(rsa_list[i-1]['prk'][1])
-        rsa_n = str(rsa_list[i-1]['puk'][0])
+        public_key = str(rsa_list[i - 1]['puk'][1])
+        private_key = str(rsa_list[i - 1]['prk'][1])
+        rsa_n = str(rsa_list[i - 1]['puk'][0])
 
         set_player_attribute(i, 'public_key', public_key, 'string')
         set_player_attribute(i, 'private_key', private_key, 'string')
         set_player_attribute(i, 'rsa_n', rsa_n, 'string')
 
-    # initialize MILL
+def initialize_lagrange():
+    num = 5  # create num keys
+    least_num = 3  # at least least_num keys can open the box
+
+    password, keys = lagrange.create_lagrange_key(40, num, least_num)
+
+    # update box password
+    statement = 'UPDATE main_box SET password={}'.format(password)
+    conn.execute(statement)
+    conn.commit()
+
+    # update user box_key_x and box_key_y
+    for i in range(1, 6):
+        set_player_attribute(i, 'box_key_x', keys[i-1][0], 'int')
+        set_player_attribute(i, 'box_key_y', keys[i-1][1], 'int')
+
+
+
+def initialize_mill():
     for i in range(1, 6):
         mill_rand = str(random.getrandbits(233))
         mill_prime = "temp"
@@ -218,17 +248,49 @@ def initialize():
         set_player_attribute(i, 'mill_rand', mill_rand, 'string')
         set_player_attribute(i, 'mill_prime', mill_prime, 'string')
 
-    # initialize lagrange
+def initialize_position():
+    # initialize position
+    for i in range(1, 6):
+        position_x = random.randint(1, 24)
+        position_y = random.randint(1, 24)
+        while (not constraint_check('position', (position_x, position_y))):
+            position_x = random.randint(1, 24)
+            position_y = random.randint(1, 24)
+        set_player_attribute(i, 'position', (position_x, position_y), 'position')
 
+def initialize():
+    initialize_rank()
+    initialize_rsa()
+    initialize_lagrange()
+    initialize_mill()
+    initialize_position()
 
-
+def get_all_positions(player_id):
+    '''
+    :param player_id: the player_id is expected to be in [0, 4]
+    :return:
+    '''
     position_list = []
     for i in range(1, 6):
         position_x = get_player_attribute(i, 'position_x')
         position_y = get_player_attribute(i, 'position_y')
         position_list.append((position_x, position_y))
 
+    user_name_list = ['pangzaiyu', 'yangyinuo', 'xujunzhou', 'gaoming', 'panhainan']
+    res_dict = {}
+    other_player = {}
+    for i in range(0, 5):
+        if(i != player_id):
+            info = {}
+            info['position'] = [position_list[i][0], position_list[i][1]]
+            info['known'] = 0
+            other_player[user_name_list[i]] = info
+    res_dict['player'] = user_name_list[player_id]
+    res_dict['position'] = [position_list[player_id][0], position_list[player_id][1]]
+    res_dict['other_players'] = other_player
+    return res_dict
 
 
 if __name__ == '__main__':
+    # print(unreachable_map_point)
     initialize()

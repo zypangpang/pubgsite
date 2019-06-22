@@ -1,3 +1,4 @@
+import json,random
 from django.shortcuts import render
 
 import csv, bisect, json, logging, random
@@ -211,11 +212,13 @@ def millToBob(a, bob):
     return millEncrypt(a,bob) - a.rank
 
 def millEncrypt(a, bob):
-    a.mill_rand = random.getrandbits(233)
-    return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
+    a.mill_rand = str(random.getrandbits(233))
+    return yynrsa.core.encrypt_int(int(a.mill_rand), int(bob.private_key), int(bob.rsa_n))
+    # return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
 
 def millDecrypt(a, msg):
-    return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
+    return yynrsa.core.decrypt_int(msg, int(a.private_key), int(a.rsa_n))
+    # return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
 
 def millToAlice(b, msg):
     rankList = list(range(1, 20))
@@ -225,7 +228,11 @@ def millToAlice(b, msg):
         possibleNumList.append(millDecrypt(b,x))
     # possibleNumList = [self.millDecrypt(x) for x in randList]
     msgToA = millCalMsgToA(b,possibleNumList)
-    return msgToA, b.mill_prime
+    return msgToA, int(b.mill_prime)
+
+def genMillRand(n):
+    (tpub, tpri) = yynrsa.newkeys(n)
+    return tpri.p
 
 def millCalMsgToA(b, pnl):
     notDone = True
@@ -233,8 +240,8 @@ def millCalMsgToA(b, pnl):
     while notDone:
         notDone = False
         (tpub, tpri) = yynrsa.newkeys(200)
-        b.mill_prime = tpri.p
-        msgToA = [x % b.mill_prime for x in pnl]
+        b.mill_prime = str(tpri.p)
+        msgToA = [x % int(b.mill_prime) for x in pnl]
         for i in range(19):
             if notDone:
                 break
@@ -246,7 +253,7 @@ def millCalMsgToA(b, pnl):
                     break
             if msgToA[i] < 2:
                 notDone = True
-            if msgToA[i] > b.mill_prime - 3:
+            if msgToA[i] > int(b.mill_prime) - 3:
                 notDone = True
     for i in range(19):
         if i < b.rank:
@@ -256,7 +263,7 @@ def millCalMsgToA(b, pnl):
     return msgToA
 
 def millGetResult(a, msg, prime):
-    remainder = a.mill_rand % prime
+    remainder = int(a.mill_rand) % prime
     if remainder == msg[a.rank]:
         return 0
     elif remainder > msg[a.rank]:
@@ -335,3 +342,65 @@ def generate_big_prime(n):
         p = random.randint(2 ** (n - 1), 2 ** n)
         if is_prime(p, 1000):
             return p
+
+'''
+### zyp test code
+def get_cur_state(request):
+    #print(request.POST['position_x'])
+    #print(request.POST['position_y'])
+    #i=random.randint(1,10)
+    i=0
+    return_dict={
+        'player':'zypang',
+        'position':[1,2],
+        #'event':{
+        #    'name':'vote_commander',
+        #    'candidates':['junzhou','hainan'],
+        #    'info':'vote for commander'
+        #},
+        #'can_choose_commander':1,
+        'otherPlayers':
+        {
+            'junzhou':{'position':[3+i,5+i], 'known':0},
+            'hainan':{'position':[5+i,11+i], 'known':1},
+        },
+    }
+    return HttpResponse(json.dumps(return_dict))
+
+
+def authenticate(request):
+    return_dict={
+        'success':0,
+        'info':'hello \n world',
+    }
+    return HttpResponse(json.dumps(return_dict))
+
+def chooseCommander(request):
+    if request.POST['vote']=='1':
+        return_dict={
+            'success':1,
+            'need_vote':0,
+            'info':'choose commander success',
+            'candidates':['junzhou','hainan'],
+            'commander':request.POST['vote_commander']
+        }
+    else:
+        return_dict={
+            'success':0,
+            'need_vote':1,
+            'info':'there are 2 soldiers with same level, so we need to vote for commander',
+            'candidates':['junzhou','hainan'],
+            'commander':''
+        }
+    return HttpResponse(json.dumps(return_dict))
+
+def open_house(request):
+    return_dict={
+        'success':1,
+        'info':'open house success',
+    }
+    return HttpResponse(json.dumps(return_dict))
+
+def game_over(request):
+    pass
+'''

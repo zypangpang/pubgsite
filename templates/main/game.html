@@ -2,7 +2,17 @@
 <html>
 <head>
     {% load static %}
+    <script src="{% static "main/js/jquery-3.4.1.js" %}"></script>
     <script src="{% static "main/js/phaser.js" %}"></script>
     <script src="{% static game_path %}"></script>
+    <script type="text/javascript">
+        window.CSRF_TOKEN = "{{ csrf_token }}";
+        STATE_URL="{% url 'main:get_state' %}";
+        INIT_URL="{% url 'main:init' %}";
+        AUTH_URL="{% url 'main:auth' %}";
+        COMMANDER_URL="{% url 'main:commander' %}";
+        OPEN_HOUSE_URL="{% url 'main:open_house' %}";
+        GAME_OVER_URL="{% url 'main:game_over' %}";
+    </script>
 </head>
 </html>

@@ -263,6 +263,13 @@ def change_system_status():
     conn.execute(statement)
     conn.commit()
 
+def check_system_status():
+    statement = "select intValue from main_systemparam"
+    cursor = conn.execute(statement)
+    conn.commit()
+    rows = cursor.fetchall()
+    return (int(rows[0][0]) != 0)
+
 def initialize():
     initialize_rank()
     initialize_rsa()
@@ -276,6 +283,9 @@ def get_all_positions(player_id):
     :param player_id: the player_id is expected to be in [0, 4]
     :return:
     '''
+    if(not check_system_status()):
+        initialize()
+    player_id = player_id - 1
     position_list = []
     for i in range(1, 6):
         position_x = get_player_attribute(i, 'position_x')
@@ -299,5 +309,6 @@ def get_all_positions(player_id):
 
 if __name__ == '__main__':
     # print(unreachable_map_point)
-    initialize()
+    # initialize()
+    print(check_system_status())
 

@@ -1,3 +1,4 @@
+#-*- coding:utf-8 -*-
 import json,random
 from django.shortcuts import render
 
@@ -230,11 +231,11 @@ def get_cur_state(request):
         c_username = User.objects.get(id=user.certificating_with).get_username()
         return_dict['event'] = {'name': 'auth',
                                 'username': c_username,
-                                'info': 'you are certificating with ' + c_username + '.'}
+                                'info': '你正在和' + c_username + '认证。'}
     if user.opening_box > 0:
         return_dict['event'] = {'name': 'open_house',
                                 'house_id': user.opening_box,
-                                'info': 'you are opening box ' + str(user.opening_box) + '.'}
+                                'info': '你正在开启' + str(user.opening_box) + '号房子。'}
 
     global_status = models.SystemParam.objects.get(key='global_status').intValue
     #TODO: fetch candidates list
@@ -247,11 +248,11 @@ def get_cur_state(request):
     elif global_status == 5:
         return_dict['event'] = {'name': 'game_over',
                                 'end': 1,
-                                'info': 'you enter the house and find lot\'s of shinning weapons.'}
+                                'info': '你进入了房子，找到了大量物资与武器。'}
     elif global_status == 6:
         return_dict['event'] = {'name': 'game_over',
                                 'end': 0,
-                                'info': 'you enter the house. suddenly the house explode. you die.'}
+                                'info': '你走进房子的那一刻，房子突然爆炸，你们被炸死了。'}
 
     return HttpResponse(json.dumps(return_dict))
 
@@ -274,14 +275,14 @@ def authenticate(request):
     to_user = models.Users.objects.get(id=to_id)
     if result == 1:
         rsa.merge_user_group(from_id, to_id)
-        info = f"certificate with {to_username} succeed." \
-            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
-            f"his public key is {to_user.public_key[0:8]}..." \
-            f"his private key is {to_user.private_key[0:8]}..."
+        info = f"你成功地认证了{to_username}。\n" \
+            f"他的rsa_n是{to_user.rsa_n[0:8]}...\n" \
+            f"他的公钥是{to_user.public_key[0:8]}...\n" \
+            f"他的私钥是{to_user.private_key[0:8]}..."
     else:
-        info = f"certificate with {to_username} fail." \
-            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
-            f"his public key is {to_user.public_key[0:8]}..."
+        info = f"你对{to_username}的认证失败了。\n" \
+            f"他的rsa_n是{to_user.rsa_n[0:8]}...\n" \
+            f"他的公钥是{to_user.public_key[0:8]}..."
     return_dict = {'success': result,
                    'info': info}
 
@@ -312,7 +313,7 @@ def open_house(request):
 
     if box_id < 0:
         return_dict = {'success': 0,
-                       'info': 'you are not close to any house.'}
+                       'info': '你并不在任何一个房子的旁边。'}
         return HttpResponse(json.dumps(return_dict))
 
     user.opening_box = box_id
@@ -330,19 +331,19 @@ def open_house(request):
     print(key_list)
     solve_result = lagrange.solve_lagrange(key_list, box.least_num)
     result = 0
-    info = f"open fail, the password of house is {box.password} but you get the password {solve_result}.\n" \
+    info = f"打开失败，这个房子的密码是{box.password}但你们输入的密码是{solve_result}。\n" \
         f"your keys are {', '.join([str(k) for k in key_list])}."
     if solve_result == -1:
         result = 0
-        info = f"need 3 people to open the box but there're only {len(key_list)} people around the house."
+        info = f"需要3人才能打开，这里只有{len(key_list)}个自己人。"
     elif solve_result == -2:
         result = 0
-        info = f"there are keys with same x. it should not happen.\n" \
-               f"your keys are {', '.join([str(k) for k in key_list])}."
+        info = f"你们的密钥里出现了相同的x。\n" \
+               f"你们的密钥是{', '.join([str(k) for k in key_list])}。"
     elif solve_result == box.password:
         result = 1
-        info = f"open succeed, the password of house is {solve_result}.\n" \
-            f"your keys are {', '.join([str(k) for k in key_list])}."
+        info = f"打开成功，房子的密码是{solve_result}。\n" \
+            f"你们的密钥是{', '.join([str(k) for k in key_list])}。"
 
     return_dict = {'success': result,
                    'info': info}

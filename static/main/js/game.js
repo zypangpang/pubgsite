@@ -840,7 +840,7 @@ function get_cur_state(url){
 
             refreshScene(init_scene);
 
-            if(cur_state['event'] && !checkInEvent())
+            if(cur_state['event'] )
                 processEvent(cur_state['event']);
 
             if(cur_state['can_choose_commander'] && !checkInEvent())
@@ -853,13 +853,13 @@ function get_cur_state(url){
 
             init_scene=false;
 
-            scene.time.delayedCall(5000,function () {
+            scene.time.delayedCall(500,function () {
                 get_cur_state(STATE_URL);
             });
         },
         error:function (data) {
             console.log('ajax error');
-            scene.time.delayedCall(5000,function () {
+            scene.time.delayedCall(1000,function () {
                 get_cur_state(STATE_URL);
             });
         }
@@ -890,19 +890,21 @@ function refreshScene(first) {
     }
 }
 function processEvent(event) {
-    console.log('process event');
-    showMessage(event.info);
-    if(event.name=='vote_commander'){
-        processVoteCommander(event.candidates);
-    }
-    else if(event.name=='auth'){
-    }
-    else if(event.name=='open_house'){
-        openHouseState=true;
-    }
-    else if(event.name=='game_over'){
+    if(event.name==='game_over'){
         gameOver=true;
         processGameOver(event.end);
+    }
+    if(checkInEvent())
+        return;
+    console.log('process event');
+    showMessage(event.info);
+    if(event.name==='vote_commander'){
+        chooseCommander()
+    }
+    else if(event.name==='auth'){
+    }
+    else if(event.name==='open_house'){
+        openHouseState=true;
     }
 }
 function processAuthentication(userBId)
@@ -963,6 +965,8 @@ function processVoteCommander(candidates) {
 }
 function chooseCommander()
 {
+    if(have_commander)
+        return;
     console.log('choose commander');
     $.ajax({
         method: 'post',
@@ -978,7 +982,12 @@ function chooseCommander()
             showMessage(result.info);
             if(result.success)
             {
-                if(result.commander==userid){
+                player.clearTint();
+                for(let plyer in skeletons)
+                {
+                    skeletons[plyer].clearTint();
+                }
+                if(result.commander===userid){
                     player.setTint(0xffd700);
                     player.setTextTint(0xffd700);
                 }
@@ -1011,8 +1020,13 @@ function chooseCommander()
 function vote_for_commander(commanderId)
 {
     console.log(commanderId);
+
     commander_candidates.forEach(function (candidate) {
-        skeletons[candidate].removeInteractive();
+        if(candidate===userid) {
+            player.removeInteractive();
+        }
+        else
+            skeletons[candidate].removeInteractive();
     });
     $.ajax({
         method: 'post',
@@ -1037,6 +1051,7 @@ function vote_for_commander(commanderId)
 }
 function processGameOver(goodend) {
     gameOver=true;
+    scene.time.removeAllEvents();
     dialog.setVisible(false);
     if(goodend)
     {

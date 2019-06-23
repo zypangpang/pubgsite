@@ -46,7 +46,7 @@ def initialize_rank():
         user = models.Users.objects.get(id=i)
         user.group_id = i
         if user.rank == -1:
-            user.rank = random.randint(1, 20)
+            user.rank = random.randint(1, 18)
         user.save()
 
 

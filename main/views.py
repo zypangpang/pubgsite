@@ -87,8 +87,8 @@ def choose_rank(request):
     rank = int(request.GET['rank'])
     user_id = request.user.id
     if rank != -1:
-        if rank < 1 or rank > 19:
-            rank = random.randint(1, 19)
+        if rank < 1 or rank > 18:
+            rank = random.randint(1, 18)
     models.Users.objects.filter(user_id=user_id).update(rank=rank)
     return redirect('main:choose-room')
 
@@ -119,11 +119,10 @@ def choose_cmd(request):
         authVC = User.objects.get(username=authName)
         user.vote_to = authVC.id
         user.save()
-
         cs = []
         okFlag = 1
         for u in all_users:
-            if u.vote_to is None:
+            if u.vote_to <0:
                 okFlag = 0
                 break
             else:
@@ -132,7 +131,7 @@ def choose_cmd(request):
         if okFlag == 0:
             return_dict = {
                 'success': 0,
-                'need_vote': 1,
+                'need_vote': 0,
                 'info': 'choosing commander\nplease wait',
                 'candidates': [],
                 'commander': ''
@@ -148,32 +147,77 @@ def choose_cmd(request):
                 'candidates': [authCom.username],
                 'commander': authCom.username
             }
+            initialization.change_system_status(4)
+
     else:
-        print(all_users)
-        (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
-        print((tempResult,commander,setP,setQ,setR))
-        if tempResult == 0:
-            authCom = User.objects.get(id=commander.id)
-            info = 'commander is '+authCom.username
-            return_dict = {
-                'success': 1,
-                'need_vote': 0,
-                'info': info,
-                'candidates': [authCom.username],
-                'commander': authCom.username
-            }
+        global_state=models.SystemParam.objects.get(key='global_status').intValue
+        if global_state >= 3:
+            need_vote=0
+            candidates=[]
+            if user.vote_to<0:
+                need_vote=1
+                candidates=models.SystemParam.objects.get(key='candidates').strValue.split(',')
+            cs = []
+            okFlag = 1
+            for u in all_users:
+                if u.vote_to <0:
+                    okFlag = 0
+                    break
+                else:
+                    cs.append(models.Users.objects.get(id=u.vote_to))
+
+            if okFlag == 0:
+                return_dict = {
+                    'success': 0,
+                    'need_vote': need_vote,
+                    'info': 'choosing commander\nplease wait',
+                    'candidates':candidates ,
+                    'commander': ''
+                }
+            else:
+                commander = voteLeader(cs,all_users)
+                authCom = User.objects.get(id=commander.id)
+                info = 'commander is ' + authCom.username
+                return_dict = {
+                    'success': 1,
+                    'need_vote': 0,
+                    'info': info,
+                    'candidates': [authCom.username],
+                    'commander': authCom.username
+                }
+                initialization.change_system_status(4)
         else:
-            can = []
-            for u in setQ:
-                tempAU = User.objects.get(id=u.id)
-                can.append(tempAU.username)
-            return_dict = {
-                'success': 0,
-                'need_vote': 1,
-                'info': 'there are soldiers with same rank, so we need to vote for commander',
-                'candidates': can,
-                'commander': ''
-            }
+            print(all_users)
+            (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
+            print((tempResult,commander,setP,setQ,setR))
+            if tempResult == 0:
+                authCom = User.objects.get(id=commander.id)
+                info = 'commander is '+authCom.username
+                return_dict = {
+                    'success': 1,
+                    'need_vote': 0,
+                    'info': info,
+                    'candidates': [authCom.username],
+                    'commander': authCom.username
+                }
+                initialization.change_system_status(4)
+            else:
+                can = []
+                for u in setQ:
+                    tempAU = User.objects.get(id=u.id)
+                    can.append(tempAU.username)
+                return_dict = {
+                    'success': 0,
+                    'need_vote': 1,
+                    'info': 'there are soldiers with same rank, so we need to vote for commander',
+                    'candidates': can,
+                    'commander': ''
+                }
+                candidates = models.SystemParam.objects.get(key='candidates')
+                candidates.strValue = ','.join(can)
+                candidates.save()
+                initialization.change_system_status(3)
+
     return HttpResponse(json.dumps(return_dict))
 
 
@@ -214,7 +258,7 @@ def get_cur_state(request):
         global_status.save()
 
     can_choose_commander = 0
-    if (global_status.intValue in [2, 3]) and (user.vote_to <= 0):
+    if global_status.intValue >=2: #and (user.vote_to <= 0):
         can_choose_commander = 1
 
     return_dict = {
@@ -240,9 +284,9 @@ def get_cur_state(request):
     if global_status == 3:
         if user.vote_to <= 0:
             candidates = ['junzhou','hainan']
-            return_dict['event'] = {'name': 'vote_commander',}
-                                   # 'candidates': candidates,
-                                    #'info': 'vote for commander. options: ' + ', '.join(candidates) + '.'}
+            return_dict['event'] = {'name': 'vote_commander',
+                                    'info': '选举指挥官'}
+            # 'candidates': candidates,
     elif global_status == 5:
         return_dict['event'] = {'name': 'game_over',
                                 'end': 1,

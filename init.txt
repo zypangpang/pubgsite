@@ -42,9 +42,9 @@ INSERT INTO main_rank (id, name) VALUES (15, '上校');
 INSERT INTO main_rank (id, name) VALUES (16, '大校');
 INSERT INTO main_rank (id, name) VALUES (17, '少将');
 INSERT INTO main_rank (id, name) VALUES (18, '中将');
-INSERT INTO main_rank (id, name) VALUES (19, '上将');
 
 INSERT INTO main_systemparam (id, key, intValue, strValue) VALUES (1, 'global_status', 0, null);
+INSERT INTO main_systemparam (id, key, intValue, strValue) VALUES (2, 'candidates', 0, '');
 
 
 

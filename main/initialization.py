@@ -68,7 +68,8 @@ def initialize_lagrange():
 
     password, keys = lagrange.create_lagrange_key(40, num, least_num)
 
-    models.Box.objects.password = password
+    box = models.Box.objects.all().update(password = password)
+
     for i in range(1, 6):
         user = models.Users.objects.get(id=i)
         user.box_key_x = keys[i-1][0]

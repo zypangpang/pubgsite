@@ -836,7 +836,7 @@ function get_cur_state(url){
         success: function(data)
         {
             cur_state=JSON.parse(data);
-            //console.log(cur_state);
+            console.log(cur_state);
 
             refreshScene(init_scene);
 

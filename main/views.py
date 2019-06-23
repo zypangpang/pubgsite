@@ -345,12 +345,12 @@ def open_house(request):
 def game_over(request):
     ending = request.POST['ending']
     global_status = models.SystemParam.objects.get(key='global_status')
-    if ending == 1:
+    if ending == '1':
         global_status.intValue = 5
-    elif ending == 0:
+    elif ending == '0':
         global_status.intValue = 6
     global_status.save()
-    return_dict={'success': 1}
+    return_dict = {'success': 1}
     return HttpResponse(json.dumps(return_dict))
 
 # 自定义方法

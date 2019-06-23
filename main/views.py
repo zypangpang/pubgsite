@@ -248,7 +248,7 @@ def get_cur_state(request):
     elif global_status == 5:
         return_dict['event'] = {'name': 'game_over',
                                 'end': 1,
-                                'info': '你进入了房子，找到了大量物资与武器。'}
+                                'info': '你进入了房子，找到了大量物资与武器。任务成功。'}
     elif global_status == 6:
         return_dict['event'] = {'name': 'game_over',
                                 'end': 0,

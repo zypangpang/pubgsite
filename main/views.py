@@ -261,21 +261,27 @@ def authenticate(request):
         certificate_result: 1 success, 0 fail
     '''
     from_id = request.user.id
-    user = models.Users.objects.get(user_id=request.user.id)
-    to_id = request.POST['userB_id']
+    user = models.Users.objects.get(user_id=from_id)
+    to_username = request.POST['userB_id']
 
-    to_id = User.objects.get(username=to_id).id
+    to_id = User.objects.get(username=to_username).id
 
     user.certificating_with = to_id
     user.save()
 
     result = rsa.two_way_certificate(from_id, to_id)
     info = ""
+    to_user = models.Users.objects.get(id=to_id)
     if result == 1:
         rsa.merge_user_group(from_id, to_id)
-        info = "certificate with user " + str(to_id) + " succeed."
+        info = f"certificate with {to_username} succeed." \
+            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
+            f"his public key is {to_user.public_key[0:8]}..." \
+            f"his private key is {to_user.private_key[0:8]}..."
     else:
-        info = "certificate with user " + str(to_id) + " fail."
+        info = f"certificate with {to_username} fail." \
+            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
+            f"his public key is {to_user.public_key[0:8]}..."
     return_dict = {'success': result,
                    'info': info}
 
@@ -324,17 +330,19 @@ def open_house(request):
     print(key_list)
     solve_result = lagrange.solve_lagrange(key_list, box.least_num)
     result = 0
-    info = "open fail"
-    print(f'solve result: {solve_result}')
+    info = f"open fail, the password of house is {box.password} but you get the password {solve_result}.\n" \
+        f"your keys are {', '.join([str(k) for k in key_list])}."
     if solve_result == -1:
         result = 0
-        info = "need more people to open the box"
+        info = f"need 3 people to open the box but there're only {len(key_list)} people around the house."
     elif solve_result == -2:
         result = 0
-        info = "the key is conflict"
+        info = f"there are keys with same x. it should not happen.\n" \
+               f"your keys are {', '.join([str(k) for k in key_list])}."
     elif solve_result == box.password:
         result = 1
-        info = "open succeed"
+        info = f"open succeed, the password of house is {solve_result}.\n" \
+            f"your keys are {', '.join([str(k) for k in key_list])}."
 
     return_dict = {'success': result,
                    'info': info}

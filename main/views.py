@@ -379,15 +379,17 @@ def findLeader(s):
     setR = []
     n = len(s)
     if n == 1:
-        return (0,s[0],setP,setQ,setR)
-    # print("millionaire begin")
+        return (0, s[0], setP, setQ, setR)
+    print("millionaire begin")
     for x in range(n):
         if x == 0:
             setQ.append(s[0])
             continue
-        print("comparing %d of rank %d and %d of rank %d "%(0,s[0].rank,x,s[x].rank))
-        compareResult = millionaire(s[0],s[x])
-        print("result of user %d with user %d is %d"%(0,x,compareResult))
+
+        print("comparing %d of rank %d and %d of rank %d " % (0, s[0].rank, x, s[x].rank))
+        compareResult = millionaire(s[0], s[x])
+        print("result of user %d with user %d is %d" % (0, x, compareResult))
+
         if compareResult == -1:
             setR.append(s[x])
         elif compareResult == 0:
@@ -398,7 +400,7 @@ def findLeader(s):
     if len(setR) > 0:
         return findLeader(setR)
     if len(setQ) == 1:
-        return (0,s[0],setP,setQ,setR)
+        return (0, s[0], setP, setQ, setR)
 
     setV = []
     for user in s:
@@ -406,61 +408,49 @@ def findLeader(s):
             setV.append(user)
     return (1,s[0],setP,setQ,setR)
 
-def millionaire(a,b):
-    msgToB = millToBob(a,b)
-    msgToA,primeOfB = millToAlice(b,msgToB)
-    result = millGetResult(a,msgToA,primeOfB)
-    return 0-result
+def millEncrypt(a,bob):
+    a.mill_rand = random.getrandbits(233)
+    a.save()
+    return yynrsa.core.encrypt_int(a.randIntX, bob.private_key.e, bob.rsa_n)
 
-def millToBob(a, bob):
+def millToBob(a,bob):
     return millEncrypt(a,bob) - a.rank
 
-def millEncrypt(a, bob):
-    a.mill_rand = str(random.getrandbits(233))
-    a.save()
-    return yynrsa.core.encrypt_int(int(a.mill_rand), int(bob.private_key), int(bob.rsa_n))
-    # return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
+def millDecrypt(a,msg):
+    return yynrsa.core.decrypt_int(msg,a.private_key,a.rsa_n)
 
-def millDecrypt(a, msg):
-    return yynrsa.core.decrypt_int(msg, int(a.private_key), int(a.rsa_n))
-    # return yynrsa.core.decrypt_int(msg, a.__private_key.d, a.__private_key.n)
-
-def millToAlice(b, msg):
-    rankList = list(range(1, 20))
-    randList = [msg + x for x in rankList]
-    possibleNumList = []
-    for x in randList:
-        possibleNumList.append(millDecrypt(b,x))
-    # possibleNumList = [self.millDecrypt(x) for x in randList]
-    msgToA = millCalMsgToA(b,possibleNumList)
-    return msgToA, int(b.mill_prime)
-
-def genMillRand(n):
-    (tpub, tpri) = yynrsa.newkeys(n)
-    return tpri.p
-
-def millCalMsgToA(b, pnl):
+def millCalMsgToA(b,pnl):
     notDone = True
     msgToA = []
     while notDone:
         notDone = False
-        (tpub, tpri) = yynrsa.newkeys(200)
+        # print("fuck")
+        (tpub,tpri) = yynrsa.newkeys(200)
         b.mill_prime = str(tpri.p)
         b.save()
-        msgToA = [x % int(b.mill_prime) for x in pnl]
+
+        msgToA = [x%int(b.mill_prime) for x in pnl]
+
         for i in range(19):
+            # print("msgToA[%d]: %d"%(i,msgToA[i]))
             if notDone:
                 break
             for j in range(19):
                 if i == j:
                     continue
+                # print("msgToA[%d]: %d"%(j,msgToA[j]))
                 if abs(msgToA[i] - msgToA[j]) < 3:
+                    # print("fuck1")
                     notDone = True
                     break
             if msgToA[i] < 2:
+                # print("fuck2")
                 notDone = True
             if msgToA[i] > int(b.mill_prime) - 3:
+                # print("fuck3")
                 notDone = True
+        # print("notDone: %d"%(notDone))
+    # print("ahhhhhh")
     for i in range(19):
         if i < b.rank:
             msgToA[i] = msgToA[i] - 1
@@ -468,8 +458,15 @@ def millCalMsgToA(b, pnl):
             msgToA[i] = msgToA[i] + 1
     return msgToA
 
-def millGetResult(a, msg, prime):
-    remainder = int(a.mill_rand) % prime
+def millToAlice(b,msg):
+    rankList = list(range(0,19))
+    randList = [msg+x for x in rankList]
+    possibleNumList = [millDecrypt(b,x) for x in randList]
+    msgToA = millCalMsgToA(b,possibleNumList)
+    return msgToA,int(b.mill_prime)
+
+def millGetResult(a,msg,prime):
+    remainder = a.mill_rand % prime
     if remainder == msg[a.rank]:
         return 0
     elif remainder > msg[a.rank]:
@@ -477,6 +474,12 @@ def millGetResult(a, msg, prime):
     else:
         return -1
     return -2
+
+def millionaire(a,b):
+    msgToB = millToBob(a,b)
+    msgToA,primeOfB = millToAlice(b,msgToB)
+    result = millGetResult(a,msgToA,primeOfB)
+    return (0-result)
 
 def voteLeader(cs, vs):
     (pub, pri) = yynrsa.newkeys(16)

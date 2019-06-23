@@ -48,7 +48,11 @@ def db_init(request):
                                 public_key=None, private_key=None, mill_rand=None, mill_prime=None,
                                 room_id=1, box_key_x=None, box_key_y=None, certificating_with=-1,
                                 opening_box=-1, rsa_n=None, vote_to=-1, rank=-1)
-    models.SystemParam.objects.filter(key="global_status").update(intValue=0)
+    global_state=models.SystemParam.objects.get(key='global_status')
+    global_state.intValue=0
+    global_state.save()
+    print(global_state)
+
     models.Box.objects.update(password=None)
     models.Users.objects.filter(id=1).update(user_name='pangzaiyu')
     models.Users.objects.filter(id=2).update(user_name='xujunzhou')
@@ -145,7 +149,9 @@ def choose_cmd(request):
                 'commander': authCom.username
             }
     else:
+        print(all_users)
         (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
+        print((tempResult,commander,setP,setQ,setR))
         if tempResult == 0:
             authCom = User.objects.get(id=commander.id)
             info = 'commander is '+authCom.username
@@ -204,7 +210,7 @@ def get_cur_state(request):
         other_players[u.user.get_username()] = {'position': [u.position_x, u.position_y],
                                     'known': same_group}
 
-    if (known_count >= 4) and (global_status.intValue <= 1):
+    if (known_count >= 4) and (global_status.intValue == 1):
         global_status.intValue = 2
         global_status.save()
 
@@ -255,21 +261,27 @@ def authenticate(request):
         certificate_result: 1 success, 0 fail
     '''
     from_id = request.user.id
-    user = models.Users.objects.get(user_id=request.user.id)
-    to_id = request.POST['userB_id']
+    user = models.Users.objects.get(user_id=from_id)
+    to_username = request.POST['userB_id']
 
-    to_id = User.objects.get(username=to_id).id
+    to_id = User.objects.get(username=to_username).id
 
     user.certificating_with = to_id
     user.save()
 
     result = rsa.two_way_certificate(from_id, to_id)
     info = ""
+    to_user = models.Users.objects.get(id=to_id)
     if result == 1:
         rsa.merge_user_group(from_id, to_id)
-        info = "certificate with user " + str(to_id) + " succeed."
+        info = f"certificate with {to_username} succeed." \
+            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
+            f"his public key is {to_user.public_key[0:8]}..." \
+            f"his private key is {to_user.private_key[0:8]}..."
     else:
-        info = "certificate with user " + str(to_id) + " fail."
+        info = f"certificate with {to_username} fail." \
+            f"his rsa_n is {to_user.rsa_n[0:8]}..." \
+            f"his public key is {to_user.public_key[0:8]}..."
     return_dict = {'success': result,
                    'info': info}
 
@@ -318,17 +330,19 @@ def open_house(request):
     print(key_list)
     solve_result = lagrange.solve_lagrange(key_list, box.least_num)
     result = 0
-    info = "open fail"
-    print(f'solve result: {solve_result}')
+    info = f"open fail, the password of house is {box.password} but you get the password {solve_result}.\n" \
+        f"your keys are {', '.join([str(k) for k in key_list])}."
     if solve_result == -1:
         result = 0
-        info = "need more people to open the box"
+        info = f"need 3 people to open the box but there're only {len(key_list)} people around the house."
     elif solve_result == -2:
         result = 0
-        info = "the key is conflict"
+        info = f"there are keys with same x. it should not happen.\n" \
+               f"your keys are {', '.join([str(k) for k in key_list])}."
     elif solve_result == box.password:
         result = 1
-        info = "open succeed"
+        info = f"open succeed, the password of house is {solve_result}.\n" \
+            f"your keys are {', '.join([str(k) for k in key_list])}."
 
     return_dict = {'success': result,
                    'info': info}
@@ -344,6 +358,8 @@ def game_over(request):
     elif ending == 0:
         global_status.intValue = 6
     global_status.save()
+    return_dict={'success': 1}
+    return HttpResponse(json.dumps(return_dict))
 
 # 自定义方法
 def get_return_dict_for_navbar(request):
@@ -368,9 +384,11 @@ def findLeader(s):
         if x == 0:
             setQ.append(s[0])
             continue
+
         print("comparing %d of rank %d and %d of rank %d " % (0, s[0].rank, x, s[x].rank))
         compareResult = millionaire(s[0], s[x])
         print("result of user %d with user %d is %d" % (0, x, compareResult))
+
         if compareResult == -1:
             setR.append(s[x])
         elif compareResult == 0:
@@ -409,7 +427,9 @@ def millCalMsgToA(b,pnl):
         (tpub,tpri) = yynrsa.newkeys(200)
         b.mill_prime = str(tpri.p)
         b.save()
+
         msgToA = [x%int(b.mill_prime) for x in pnl]
+
         for i in range(19):
             # print("msgToA[%d]: %d"%(i,msgToA[i]))
             if notDone:

@@ -936,8 +936,12 @@ function processVoteCommander(candidates) {
     choose_commander=true;
     vote_commander=true;
     commander_candidates=candidates;
-    candidates.forEach(function (userid) {
-        let sprite=skeletons[userid];
+    candidates.forEach(function (user_id) {
+        let sprite;
+        if(user_id===userid)
+            sprite=player;
+        else
+            sprite=skeletons[user_id];
         sprite.setInteractive();
         //sprite.setTextTint(0x00ff00);
         sprite.on('pointerover', function () {

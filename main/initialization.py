@@ -43,9 +43,10 @@ def initialize_rank():
     # initialize rank
     for i in range(1, 6):
         user = models.Users.objects.get(id=i)
+        user.group_id = i
         if user.rank == -1:
             user.rank = random.randint(1, 20)
-            user.save()
+        user.save()
 
 
 def initialize_rsa():
@@ -68,7 +69,7 @@ def initialize_lagrange():
 
     password, keys = lagrange.create_lagrange_key(40, num, least_num)
 
-    models.Box.objects.all().update(password = password)
+    models.Box.objects.all().update(password=password)
 
     for i in range(1, 6):
         user = models.Users.objects.get(id=i)
@@ -109,6 +110,7 @@ def change_system_status():
 
 def check_system_status():
     global_state=models.SystemParam.objects.get(key="global_status")
+    print(f'global status{global_state.intValue}')
     return global_state.intValue != 0
 
 

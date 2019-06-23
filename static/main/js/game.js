@@ -852,14 +852,19 @@ function get_cur_state(url){
             }
 
             init_scene=false;
+
+            scene.time.delayedCall(5000,function () {
+                get_cur_state(STATE_URL);
+            });
         },
         error:function (data) {
             console.log('ajax error');
+            scene.time.delayedCall(5000,function () {
+                get_cur_state(STATE_URL);
+            });
         }
     });
-    scene.time.delayedCall(5000,function () {
-        get_cur_state(STATE_URL);
-    });
+
 }
 function refreshScene(first) {
     if(first)

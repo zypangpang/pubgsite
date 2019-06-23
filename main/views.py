@@ -54,11 +54,10 @@ def db_init(request):
     print(global_state)
 
     models.Box.objects.update(password=None)
-    models.Users.objects.filter(id=1).update(user_name='pangzaiyu')
-    models.Users.objects.filter(id=2).update(user_name='xujunzhou')
-    models.Users.objects.filter(id=3).update(user_name='yangyinuo')
-    models.Users.objects.filter(id=4).update(user_name='gaoming')
-    models.Users.objects.filter(id=5).update(user_name='panhainan')
+    for i in range(5):
+        j=i+1
+        models.Users.objects.filter(id=j).update(user_name=User.objects.get(id=j).username)
+
     return redirect('main:choose-room')
 
 
@@ -178,7 +177,6 @@ def choose_cmd(request):
 
 
 
-@login_required
 def init(request):
     '''
     :param player_id: the player_id is expected to be in [0, 4]
@@ -408,15 +406,15 @@ def findLeader(s):
     return (1,s[0],setP,setQ,setR)
 
 def millEncrypt(a,bob):
-    a.mill_rand = random.getrandbits(233)
+    a.mill_rand = str(random.getrandbits(233))
     a.save()
-    return yynrsa.core.encrypt_int(a.randIntX, bob.private_key.e, bob.rsa_n)
+    return yynrsa.core.encrypt_int(int(a.mill_rand), int(bob.public_key), int(bob.rsa_n))
 
 def millToBob(a,bob):
     return millEncrypt(a,bob) - a.rank
 
 def millDecrypt(a,msg):
-    return yynrsa.core.decrypt_int(msg,a.private_key,a.rsa_n)
+    return yynrsa.core.decrypt_int(msg,int(a.private_key),int(a.rsa_n))
 
 def millCalMsgToA(b,pnl):
     notDone = True
@@ -465,7 +463,7 @@ def millToAlice(b,msg):
     return msgToA,int(b.mill_prime)
 
 def millGetResult(a,msg,prime):
-    remainder = a.mill_rand % prime
+    remainder = int(a.mill_rand) % prime
     if remainder == msg[a.rank]:
         return 0
     elif remainder > msg[a.rank]:

@@ -2,6 +2,7 @@ import json
 import random
 import sqlite3
 import os.path
+import time
 from . import models
 from . import lagrange
 from . import rsa_jz as rsa
@@ -103,33 +104,38 @@ def initialize_position():
         user.position_y = position_y
         user.save()
 
-def change_system_status():
+def change_system_status(state):
     global_state=models.SystemParam.objects.get(key="global_status")
-    global_state.intValue = 1
+    global_state.intValue = state
     global_state.save()
 
-def check_system_status():
+def get_system_status():
     global_state=models.SystemParam.objects.get(key="global_status")
     print(f'global status{global_state.intValue}')
     return global_state.intValue != 0
 
 
 def initialize():
-    change_system_status()
+    change_system_status(-1)
     initialize_rank()
     initialize_rsa()
     initialize_lagrange()
     initialize_mill()
     initialize_position()
+    change_system_status(1)
 
 def get_all_positions(player_id):
     '''
     :param player_id: the player_id is expected to be in [0, 4]
     :return:
     '''
-    if not check_system_status():
+    global_state=models.SystemParam.objects.get(key="global_status").intValue
+    if global_state == 0:
         print('init')
         initialize()
+    elif global_state == -1:
+        while models.SystemParam.objects.get(key="global_status").intValue == -1:
+            time.sleep(1)
     player_id = player_id - 1
     position_list = []
     for i in range(1, 6):

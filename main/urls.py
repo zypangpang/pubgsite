@@ -12,7 +12,7 @@ urlpatterns = [
 
     # 游戏子页面
     path('game/get_state/', views.get_cur_state, name='get_state'),
-    path('game/init/', views.get_cur_state, name='init'),
+    path('game/init/', views.init, name='init'),
     path('game/auth/', views.authenticate, name='auth'),
     path('game/commander/', views.choose_cmd, name='commander'),
     path('game/house/', views.open_house, name='open_house'),
@@ -30,8 +30,5 @@ urlpatterns = [
 
     # 跳伞接口
     path('parachute', views.parachute, name='parachute'),
-
-    # 数据初始化接口
-    path('init', views.init, name='init'),
 
 ]

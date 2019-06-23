@@ -50,6 +50,11 @@ def db_init(request):
                                 opening_box=-1, rsa_n=None, vote_to=-1, rank=-1)
     models.SystemParam.objects.filter(key="global_status").update(intValue=0)
     models.Box.objects.update(password=None)
+    models.Users.objects.filter(id=1).update(user_name='pangzaiyu')
+    models.Users.objects.filter(id=2).update(user_name='xujunzhou')
+    models.Users.objects.filter(id=3).update(user_name='yangyinuo')
+    models.Users.objects.filter(id=4).update(user_name='gaoming')
+    models.Users.objects.filter(id=5).update(user_name='panhainan')
     return redirect('main:choose-room')
 
 

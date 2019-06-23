@@ -132,14 +132,14 @@ def choose_cmd(request):
             return_dict = {
                 'success': 0,
                 'need_vote': 0,
-                'info': 'choosing commander\nplease wait',
+                'info': '正在投票选出指挥官中，请耐心等待。',
                 'candidates': [],
                 'commander': ''
             }
         else:
             commander = voteLeader(cs,all_users)
             authCom = User.objects.get(id=commander.id)
-            info = 'commander is ' + authCom.username
+            info = f'指挥官是{authCom.username}。'
             return_dict = {
                 'success': 1,
                 'need_vote': 0,
@@ -170,14 +170,14 @@ def choose_cmd(request):
                 return_dict = {
                     'success': 0,
                     'need_vote': need_vote,
-                    'info': 'choosing commander\nplease wait',
+                    'info': '正在投票选出指挥官中，请耐心等待。',
                     'candidates':candidates ,
                     'commander': ''
                 }
             else:
                 commander = voteLeader(cs,all_users)
                 authCom = User.objects.get(id=commander.id)
-                info = 'commander is ' + authCom.username
+                info = f'指挥官是{authCom.username}。'
                 return_dict = {
                     'success': 1,
                     'need_vote': 0,
@@ -192,7 +192,7 @@ def choose_cmd(request):
             print((tempResult,commander,setP,setQ,setR))
             if tempResult == 0:
                 authCom = User.objects.get(id=commander.id)
-                info = 'commander is '+authCom.username
+                info = f'指挥官是{authCom.username}。'
                 return_dict = {
                     'success': 1,
                     'need_vote': 0,
@@ -209,7 +209,7 @@ def choose_cmd(request):
                 return_dict = {
                     'success': 0,
                     'need_vote': 1,
-                    'info': 'there are soldiers with same rank, so we need to vote for commander',
+                    'info': f"{', '.join(can)}的军衔并列最高，需要投票选出指挥官。",
                     'candidates': can,
                     'commander': ''
                 }
@@ -315,16 +315,17 @@ def authenticate(request):
     result = rsa.two_way_certificate(from_id, to_id)
     info = ""
     to_user = models.Users.objects.get(id=to_id)
+    show_length = 32
     if result == 1:
         rsa.merge_user_group(from_id, to_id)
         info = f"你成功地认证了{to_username}。\n" \
-            f"他的rsa_n是{to_user.rsa_n[0:8]}...\n" \
-            f"他的公钥是{to_user.public_key[0:8]}...\n" \
-            f"他的私钥是{to_user.private_key[0:8]}..."
+            f"他的rsa_n是{to_user.rsa_n[0:show_length]}...\n" \
+            f"他的公钥是{to_user.public_key[0:show_length]}...\n" \
+            f"他的私钥是{to_user.private_key[0:show_length]}..."
     else:
         info = f"你对{to_username}的认证失败了。\n" \
-            f"他的rsa_n是{to_user.rsa_n[0:8]}...\n" \
-            f"他的公钥是{to_user.public_key[0:8]}..."
+            f"他的rsa_n是{to_user.rsa_n[0:show_length]}...\n" \
+            f"他的公钥是{to_user.public_key[0:show_length]}..."
     return_dict = {'success': result,
                    'info': info}
 

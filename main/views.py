@@ -48,7 +48,11 @@ def db_init(request):
                                 public_key=None, private_key=None, mill_rand=None, mill_prime=None,
                                 room_id=1, box_key_x=None, box_key_y=None, certificating_with=-1,
                                 opening_box=-1, rsa_n=None, vote_to=-1, rank=-1)
-    models.SystemParam.objects.filter(key="global_status").update(intValue=0)
+    global_state=models.SystemParam.objects.get(key='global_status')
+    global_state.intValue=0
+    global_state.save()
+    print(global_state)
+
     models.Box.objects.update(password=None)
     models.Users.objects.filter(id=1).update(user_name='pangzaiyu')
     models.Users.objects.filter(id=2).update(user_name='xujunzhou')
@@ -145,7 +149,9 @@ def choose_cmd(request):
                 'commander': authCom.username
             }
     else:
+        print(all_users)
         (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
+        print((tempResult,commander,setP,setQ,setR))
         if tempResult == 0:
             authCom = User.objects.get(id=commander.id)
             info = 'commander is '+authCom.username
@@ -204,7 +210,7 @@ def get_cur_state(request):
         other_players[u.user.get_username()] = {'position': [u.position_x, u.position_y],
                                     'known': same_group}
 
-    if (known_count >= 4) and (global_status.intValue <= 1):
+    if (known_count >= 4) and (global_status.intValue == 1):
         global_status.intValue = 2
         global_status.save()
 
@@ -344,6 +350,8 @@ def game_over(request):
     elif ending == 0:
         global_status.intValue = 6
     global_status.save()
+    return_dict={'success': 1}
+    return HttpResponse(json.dumps(return_dict))
 
 # 自定义方法
 def get_return_dict_for_navbar(request):
@@ -368,10 +376,10 @@ def findLeader(s):
         if x == 0:
             setQ.append(s[0])
             continue
-        # print("comparing %d of rank %d and %d of rank %d "%(0,s[0].rank,x,s[x].rank))
+        print("comparing %d of rank %d and %d of rank %d "%(0,s[0].rank,x,s[x].rank))
         compareResult = millionaire(s[0],s[x])
-        # print("result of user %d with user %d is %d"%(0,x,compareResult))
-        if compareResult == 1:
+        print("result of user %d with user %d is %d"%(0,x,compareResult))
+        if compareResult == -1:
             setR.append(s[x])
         elif compareResult == 0:
             setQ.append(s[x])
@@ -393,13 +401,14 @@ def millionaire(a,b):
     msgToB = millToBob(a,b)
     msgToA,primeOfB = millToAlice(b,msgToB)
     result = millGetResult(a,msgToA,primeOfB)
-    return result
+    return 0-result
 
 def millToBob(a, bob):
     return millEncrypt(a,bob) - a.rank
 
 def millEncrypt(a, bob):
     a.mill_rand = str(random.getrandbits(233))
+    a.save()
     return yynrsa.core.encrypt_int(int(a.mill_rand), int(bob.private_key), int(bob.rsa_n))
     # return yynrsa.core.encrypt_int(a.mill_rand, bob.__private_key.e, bob.__private_key.n)
 
@@ -428,6 +437,7 @@ def millCalMsgToA(b, pnl):
         notDone = False
         (tpub, tpri) = yynrsa.newkeys(200)
         b.mill_prime = str(tpri.p)
+        b.save()
         msgToA = [x % int(b.mill_prime) for x in pnl]
         for i in range(19):
             if notDone:

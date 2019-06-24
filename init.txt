@@ -45,6 +45,7 @@ INSERT INTO main_rank (id, name) VALUES (18, '中将');
 
 INSERT INTO main_systemparam (id, key, intValue, strValue) VALUES (1, 'global_status', 0, null);
 INSERT INTO main_systemparam (id, key, intValue, strValue) VALUES (2, 'candidates', 0, '');
+INSERT INTO main_systemparam (id, key, intValue, strValue) VALUES (3, 'commander', 0, '');
 
 
 

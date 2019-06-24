@@ -9,13 +9,13 @@ from . import rsa_jz as rsa
 
 
 
-print('have a try')
-db_path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
-db_name = "db.sqlite3"
-
-conn = sqlite3.connect(db_path + "/" + db_name)
-
-conn.commit()
+#print('have a try')
+#db_path = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
+#db_name = "db.sqlite3"
+#
+#conn = sqlite3.connect(db_path + "/" + db_name)
+#
+#conn.commit()
 
 
 
@@ -48,6 +48,12 @@ def initialize_rank():
         if user.rank == -1:
             user.rank = random.randint(1, 18)
         user.save()
+    commander = models.SystemParam.objects.get(key='commander')
+    commander.strValuse = ''
+    commander.save()
+    candidates=models.SystemParam.objects.get(key='candidates')
+    candidates.strValue = ''
+    candidates.save()
 
 
 def initialize_rsa():

@@ -114,32 +114,71 @@ def choose_cmd(request):
     user = models.Users.objects.get(id=user_id)
     all_users = models.Users.objects.filter(group_id=user.group_id)
 
-    if request.POST['vote'] == '1':
-        authName = request.POST['vote_commander']
-        authVC = User.objects.get(username=authName)
-        user.vote_to = authVC.id
-        user.save()
-        cs = []
+    global_state=models.SystemParam.objects.get(key='global_status').intValue
+
+    commander=models.SystemParam.objects.get(key='commander').strValue
+    if commander:
+        info = f'选取指挥官成功，指挥官是{commander}。'
+        return_dict = {
+                'success': 1,
+                'need_vote': 0,
+                'info': info,
+                'candidates': [],
+                'commander': commander
+            }
+        return HttpResponse(json.dumps(return_dict))
+
+    if global_state==4:
+        return_dict = {
+                'success': 0,
+                'need_vote': 0,
+                'info': '正在选取指挥官...',
+                'candidates':[],
+                'commander': ''
+            }
+        return HttpResponse(json.dumps(return_dict))
+
+    if global_state == 3:
+        if request.POST['vote'] == '1':
+            authName = request.POST['vote_commander']
+            authVC = User.objects.get(username=authName)
+            user.vote_to = authVC.id
+            user.save()
+        need_vote = 0
+        candidates=[]
+        info='正在投票选出指挥官中，请耐心等待。'
         okFlag = 1
-        for u in all_users:
-            if u.vote_to <0:
-                okFlag = 0
-                break
-            else:
-                cs.append(models.Users.objects.get(id=u.vote_to))
+        cs = []
+        if user.vote_to<0:
+            need_vote=1
+            candidates=models.SystemParam.objects.get(key='candidates').strValue.split(',')
+            info = f"{', '.join(candidates)}的军衔并列最高，需要投票选出指挥官。"
+            okFlag = 0
+        else:
+            for u in all_users:
+                if u.vote_to <0:
+                    okFlag = 0
+                    break
+                else:
+                    cs.append(models.Users.objects.get(id=u.vote_to))
 
         if okFlag == 0:
             return_dict = {
                 'success': 0,
-                'need_vote': 0,
-                'info': '正在投票选出指挥官中，请耐心等待。',
-                'candidates': [],
+                'need_vote': need_vote,
+                'info': info,
+                'candidates':candidates ,
                 'commander': ''
             }
         else:
             commander = voteLeader(cs,all_users)
             authCom = User.objects.get(id=commander.id)
-            info = f'指挥官是{authCom.username}。'
+            info = f'选取指挥官成功，指挥官是{authCom.username}。'
+
+            commander=models.SystemParam.objects.get(key='commander')
+            commander.strValue=authCom.username
+            commander.save()
+
             return_dict = {
                 'success': 1,
                 'need_vote': 0,
@@ -148,77 +187,43 @@ def choose_cmd(request):
                 'commander': authCom.username
             }
             initialization.change_system_status(4)
+        return HttpResponse(json.dumps(return_dict))
 
+    #print(all_users)
+    (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
+    #print((tempResult,commander,setP,setQ,setR))
+    if tempResult == 0:
+        authCom = User.objects.get(id=commander.id)
+        info = f'选取指挥官成功，指挥官是{authCom.username}。'
+
+        commander=models.SystemParam.objects.get(key='commander')
+        commander.strValue=authCom.username
+        commander.save()
+
+        return_dict = {
+            'success': 1,
+            'need_vote': 0,
+            'info': info,
+            'candidates': [authCom.username],
+            'commander': authCom.username
+        }
+        initialization.change_system_status(4)
     else:
-        global_state=models.SystemParam.objects.get(key='global_status').intValue
-        if global_state >= 3:
-            need_vote=0
-            candidates=[]
-            info='正在投票选出指挥官中，请耐心等待。'
-            if user.vote_to<0:
-                need_vote=1
-                candidates=models.SystemParam.objects.get(key='candidates').strValue.split(',')
-                info = f"{', '.join(candidates)}的军衔并列最高，需要投票选出指挥官。"
-            cs = []
-            okFlag = 1
-            for u in all_users:
-                if u.vote_to <0:
-                    okFlag = 0
-                    break
-                else:
-                    cs.append(models.Users.objects.get(id=u.vote_to))
-
-            if okFlag == 0:
-                return_dict = {
-                    'success': 0,
-                    'need_vote': need_vote,
-                    'info': info,
-                    'candidates':candidates ,
-                    'commander': ''
-                }
-            else:
-                commander = voteLeader(cs,all_users)
-                authCom = User.objects.get(id=commander.id)
-                info = f'指挥官是{authCom.username}。'
-                return_dict = {
-                    'success': 1,
-                    'need_vote': 0,
-                    'info': info,
-                    'candidates': [authCom.username],
-                    'commander': authCom.username
-                }
-                initialization.change_system_status(4)
-        else:
-            print(all_users)
-            (tempResult,commander,setP,setQ,setR) = findLeader(all_users)
-            print((tempResult,commander,setP,setQ,setR))
-            if tempResult == 0:
-                authCom = User.objects.get(id=commander.id)
-                info = f'指挥官是{authCom.username}。'
-                return_dict = {
-                    'success': 1,
-                    'need_vote': 0,
-                    'info': info,
-                    'candidates': [authCom.username],
-                    'commander': authCom.username
-                }
-                initialization.change_system_status(4)
-            else:
-                can = []
-                for u in setQ:
-                    tempAU = User.objects.get(id=u.id)
-                    can.append(tempAU.username)
-                return_dict = {
-                    'success': 0,
-                    'need_vote': 1,
-                    'info': f"{', '.join(can)}的军衔并列最高，需要投票选出指挥官。",
-                    'candidates': can,
-                    'commander': ''
-                }
-                candidates = models.SystemParam.objects.get(key='candidates')
-                candidates.strValue = ','.join(can)
-                candidates.save()
-                initialization.change_system_status(3)
+        can = []
+        for u in setQ:
+            tempAU = User.objects.get(id=u.id)
+            can.append(tempAU.username)
+        return_dict = {
+            'success': 0,
+            'need_vote': 1,
+            'info': f"{', '.join(can)}的军衔并列最高，需要投票选出指挥官。",
+            'candidates': can,
+            'commander': ''
+        }
+        candidates = models.SystemParam.objects.get(key='candidates')
+        candidates.strValue = ','.join(can)
+        candidates.save()
+        initialization.change_system_status(3)
 
     return HttpResponse(json.dumps(return_dict))
 

@@ -878,7 +878,8 @@ function get_cur_state(){
             {
                 if(!have_commander) {
                     choose_commander = true;
-                    chooseCommander();
+                    showMessage('所有人已经认证成功，5秒后选取指挥官');
+                    scene.time.delayedCall(5000,chooseCommander);
                 }
             }
 
@@ -1081,19 +1082,27 @@ function vote_for_commander(commanderId)
 function processGameOver(goodend) {
     gameOver=true;
     scene.time.removeAllEvents();
-    dialog.setVisible(false);
+    //dialog.setVisible(false);
     if(goodend)
     {
-        scene.add.image(800,400,'goodend').depth=1500;
+        showMessage('很幸运，打开房子之后顺利找到了我军所需的重要物品，任务成功！');
+        scene.time.delayedCall(5000,function () {
+            dialog.setVisible(false);
+            scene.add.image(800,400,'goodend').depth=1500;
+        });
     }
     else
     {
-        scene.add.image(800,400,'badend').depth=1500;
-        for(let plyer in skeletons)
-        {
-            skeletons[plyer].play('die',true);
-        }
-        player.play('die',true);
+        showMessage('打开房子的那一刻，意外的事发生了，房子里是敌军的化学毒气，毒气很快蔓延全岛，所有人不幸遇难，任务失败！');
+        scene.time.delayedCall(5000,function () {
+            dialog.setVisible(false);
+            scene.add.image(800,400,'badend').depth=1500;
+            for(let plyer in skeletons)
+            {
+                skeletons[plyer].play('die',true);
+            }
+            player.play('die',true);
+        });
     }
 
 }
@@ -1110,7 +1119,8 @@ function openHouse(houseName) {
         success: function(data)
         {
             console.log(data);
-            let ending=getRndInteger(0,2);
+            //let ending=getRndInteger(0,2);
+            let ending=0;
             let result=JSON.parse(data);
             showMessage(result.info);
             waitingKey=true;

@@ -20,7 +20,7 @@
 
 </head>
 <body>
-<nav class="navbar navbar-expand-md bkg-white-color navbar-light px-3 py-0 fixed-top shadow">
+<nav class="navbar navbar-expand-md bkg-white-color border-bottom navbar-light px-3 py-0 fixed-top shadow">
     <!-- Brand -->
     <a class="navbar-brand" href="{% url 'main:index' %}">
         <h5 class="p-0 m-0">伞兵作战模拟系统</h5>
@@ -49,10 +49,10 @@
                     <h5 class="p-0 m-0">{{ user.username }}</h5>
                 </a>
                 <div class="dropdown-menu border-0 rounded-0 m-0 py-0 ">
-                    <a class="dropdown-item px-3 py-2" href="/admin">
+                    <!--<a class="dropdown-item px-3 py-2" href="/admin">
                         用户管理
-                    </a>
-                    <a class="dropdown-item px-3 py-2" href="/accounts/logout">
+                    </a>-->
+                    <a class="dropdown-item px-3 py-2" href="{% url 'account:logout' %}">
                         登出
                     </a>
                 </div>
@@ -64,10 +64,10 @@
 
 {% block content %}{% endblock %}
 
-<footer class="container-fluid bkg-white-color py-1 mt-2 fixed-bottom">
+<footer class="container-fluid bkg-white-color border-top py-1 mt-2 fixed-bottom">
     <div class="row">
         <div class="col-sm-12 d-flex justify-content-between">
-            <span>Copyright &copy; 2017 ZYPANG</span>
+            <span>Copyright &copy; 2018 Cyber Security Group 4</span>
             <span>{% now "jS F Y H:i"  %}</span>
         </div>
     </div>

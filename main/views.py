@@ -154,9 +154,11 @@ def choose_cmd(request):
         if global_state >= 3:
             need_vote=0
             candidates=[]
+            info='正在投票选出指挥官中，请耐心等待。'
             if user.vote_to<0:
                 need_vote=1
                 candidates=models.SystemParam.objects.get(key='candidates').strValue.split(',')
+                info = f"{', '.join(candidates)}的军衔并列最高，需要投票选出指挥官。"
             cs = []
             okFlag = 1
             for u in all_users:
@@ -170,7 +172,7 @@ def choose_cmd(request):
                 return_dict = {
                     'success': 0,
                     'need_vote': need_vote,
-                    'info': '正在投票选出指挥官中，请耐心等待。',
+                    'info': info,
                     'candidates':candidates ,
                     'commander': ''
                 }

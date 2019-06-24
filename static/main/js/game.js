@@ -104,7 +104,7 @@ function preload ()
     this.load.spritesheet('skeleton', base_path+'assets/skeleton.png', { frameWidth: 128, frameHeight: 128 });
     this.load.image('house', base_path+'assets/rem_0002.png');
     this.load.image('background', base_path+'assets/background-2.jpg');
-    this.load.image('goodend', base_path+'assets/goodend.jpg');
+    this.load.image('goodend', base_path+'assets/goodend.png');
     this.load.image('badend', base_path+'assets/badend.png');
     this.load.spritesheet('helicopter',
         base_path+'assets/helicopter-spritesheet.png',
@@ -212,7 +212,7 @@ function create ()
     heroMapTile=new Phaser.Geom.Point(0,0);
     /**************** put player **********************/
     //requestAndRefreshPlayerInfo();
-    get_cur_state(INIT_URL);
+    get_init_state();
     /**************** put player **********************/
 
     keys = this.input.keyboard.addKeys('ESC,SPACE');
@@ -463,9 +463,9 @@ function heliFlyOut() {
     //dialog.toggleWindow();
     //dialog.setText('hello world ljdlshflsdl');
 }
-function showMessage(message,time_out,call_back) {
+function showMessage(message,time_out,call_back,anim=true) {
     dialog.setVisible(true);
-    dialog.setText(message,true);
+    dialog.setText(message,anim);
     if(time_out) {
         scene.time.delayedCall(time_out,function () {
             dialog.setVisible(false);
@@ -509,7 +509,9 @@ function update ()
                 }
                 player.setVisible(true);
                 parachuting=false;
-                showMessage('伞兵模拟作战开始\n请使用上下左右键来移动角色\n祝好运')
+                showMessage('伞兵模拟作战开始\n你的任务是联系所有的队友，然后选取一个指挥官并在指挥官的' +
+                    '领导下寻找遗失在这座岛屿上某座房子内的重要物品\n请使用上下左右键来移动角色\n祝你好运');
+                get_cur_state();
             } else
                 return;
         }
@@ -538,7 +540,7 @@ function update ()
         }
         else if(keys.SPACE.isDown){
             waitingKey=false;
-            showMessage('opening house');
+            showMessage('尝试打开这个房子...');
             openHouse(openHouseId);
         }
         return;
@@ -615,7 +617,7 @@ function isWalkableSimple() {
             console.log(nextX, nextY,plyer);
             //skeletons[plyer].setTint(0xff0000);
             if(skeletons[plyer].anim_name === 'idle') {
-                showMessage('authenticating ' + plyer, undefined, function () {
+                showMessage('正在认证' + plyer, undefined, function () {
                     authenticationState = true;
                     processAuthentication(plyer);
                 });
@@ -628,7 +630,8 @@ function isWalkableSimple() {
         if (HouseCollidesCoords[house].containsArray([nextX, nextY])) {
             Houses[house].setTint(0x00ff00);
 
-            showMessage('Do you want to open this house?',undefined,function () {
+            showMessage('你的面前是一个看起来十分华丽的房子，里面貌似有着什么东西在闪闪发光，' +
+                '但黑暗处却无法看清，你想打开这座房子吗？\nEsc 取消，Space 打开',undefined,function () {
                 openHouseState=true;
                 openHouseId=house;
             });
@@ -823,10 +826,38 @@ let init_scene=true;
 let choose_commander=false;
 let vote_commander=false;
 let have_commander=false;
-function get_cur_state(url){
+function get_init_state() {
     $.ajax({
         method: 'post',
-        url: url,
+        url: INIT_URL,
+        data: {
+            user_id:userid,
+            position_x:heroMapTile.x,
+            position_y:heroMapTile.y,
+            csrfmiddlewaretoken: window.CSRF_TOKEN
+        }, // serializes the form's elements.
+        success: function(data)
+        {
+            cur_state=JSON.parse(data);
+            console.log(cur_state);
+
+            refreshScene(true);
+
+            init_scene=false;
+        },
+        error:function (data) {
+            console.log('ajax error');
+            scene.time.delayedCall(1000,function () {
+                get_init_state();
+            });
+        }
+    });
+
+}
+function get_cur_state(){
+    $.ajax({
+        method: 'post',
+        url: STATE_URL,
         data: {
             user_id:'zypang',
             position_x:heroMapTile.x,
@@ -838,7 +869,7 @@ function get_cur_state(url){
             cur_state=JSON.parse(data);
             console.log(cur_state);
 
-            refreshScene(init_scene);
+            refreshScene(false);
 
             if(cur_state['event'] )
                 processEvent(cur_state['event']);
@@ -851,16 +882,14 @@ function get_cur_state(url){
                 }
             }
 
-            init_scene=false;
-
-            scene.time.delayedCall(500,function () {
-                get_cur_state(STATE_URL);
+            scene.time.delayedCall(500, function () {
+                get_cur_state();
             });
         },
         error:function (data) {
             console.log('ajax error');
             scene.time.delayedCall(1000,function () {
-                get_cur_state(STATE_URL);
+                get_cur_state();
             });
         }
     });
@@ -979,7 +1008,7 @@ function chooseCommander()
         success: function(data)
         {
             let result=JSON.parse(data);
-            showMessage(result.info);
+            showMessage(result.info,undefined,undefined,false);
             if(result.success)
             {
                 player.clearTint();
@@ -1044,7 +1073,7 @@ function vote_for_commander(commanderId)
             chooseCommander();
         },
         error:function (data) {
-            showMessage('网络连接失败，1秒后重试');
+            showMessage('网络连接失败或者服务器错误，1秒后重试');
             scene.time.delayedCall(1000,function(){vote_for_commander(commanderId)});
         }
     });

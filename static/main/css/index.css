@@ -20,9 +20,9 @@
     display: none;
 }*/
 body {
-    /*background: lightgray url(../img/circles-and-roundabouts-2.png) repeat fixed;
-    background-size: auto;*/
-    background: lightgray;
+    background: lightgray url(../img/gaming-pattern.png) repeat fixed;
+    /*background-size: auto;
+    background: lightgray;*/
 }
 /*.navbar-nav > li > a:hover{
     background-color: lightgray;

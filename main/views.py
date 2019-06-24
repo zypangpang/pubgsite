@@ -155,6 +155,7 @@ def choose_cmd(request):
         info='正在投票选出指挥官中，请耐心等待。'
         okFlag = 1
         cs = []
+        vote_id = []
         if user.vote_to<0:
             need_vote=1
             candidates=models.SystemParam.objects.get(key='candidates').strValue.split(',')
@@ -166,7 +167,9 @@ def choose_cmd(request):
                     okFlag = 0
                     break
                 else:
-                    cs.append(models.Users.objects.get(id=u.vote_to))
+                    if u.vote_to not in vote_id:
+                        vote_id.append(u.vote_to)
+                        cs.append(models.Users.objects.get(id=u.vote_to))
 
         if okFlag == 0:
             return_dict = {

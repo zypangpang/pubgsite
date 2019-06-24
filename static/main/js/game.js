@@ -480,12 +480,11 @@ let parachuting=true;
 /******************** auxiliary function for parachuting ****************/
 function update ()
 {
-    if(gameOver)
-        return;
-
     /***************** parachuting animation ********************/
     if (helicopter.anims)
             helicopter.anims.play('heli-fly', true);
+    if(gameOver)
+        return;
     if(parachuting) {
         if (heliMoving) {
             if (Math.round(helicopter.x) >= 800) {
@@ -879,13 +878,16 @@ function get_cur_state(){
                 if(!have_commander) {
                     choose_commander = true;
                     showMessage('所有人已经认证成功，5秒后选取指挥官');
-                    scene.time.delayedCall(5000,chooseCommander);
+                    scene.time.delayedCall(3000,chooseCommander);
                 }
             }
 
-            scene.time.delayedCall(500, function () {
-                get_cur_state();
-            });
+            if(!gameOver)
+            {
+                scene.time.delayedCall(1000, function () {
+                    get_cur_state();
+                });
+            }
         },
         error:function (data) {
             console.log('ajax error');
@@ -920,13 +922,12 @@ function refreshScene(first) {
     }
 }
 function processEvent(event) {
+    console.log('process event');
     if(event.name==='game_over'){
-        gameOver=true;
         processGameOver(event.end);
     }
     if(checkInEvent())
         return;
-    console.log('process event');
     showMessage(event.info);
     if(event.name==='vote_commander'){
         chooseCommander()
@@ -1080,8 +1081,10 @@ function vote_for_commander(commanderId)
     });
 }
 function processGameOver(goodend) {
+    if(gameOver)
+        return;
     gameOver=true;
-    scene.time.removeAllEvents();
+    //scene.time.removeAllEvents();
     //dialog.setVisible(false);
     if(goodend)
     {
@@ -1126,7 +1129,6 @@ function openHouse(houseName) {
             waitingKey=true;
             if(result.success)
             {
-                gameOver=true;
                 $.ajax({
                     method:'post',
                     url: GAME_OVER_URL,

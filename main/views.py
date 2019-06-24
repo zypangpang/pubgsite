@@ -48,10 +48,16 @@ def db_init(request):
     models.Users.objects.update(is_commander=0, position_x=-1, position_y=-1,
                                 public_key=None, private_key=None, mill_rand=None, mill_prime=None,
                                 room_id=1, box_key_x=None, box_key_y=None, certificating_with=-1,
-                                opening_box=-1, rsa_n=None, vote_to=-1, rank=-1)
+                                opening_box=-1, rsa_n=None, vote_to=-1, rank=1)
     global_state=models.SystemParam.objects.get(key='global_status')
     global_state.intValue=0
     global_state.save()
+    commander=models.SystemParam.objects.get(key='commander')
+    commander.strValue=''
+    commander.save()
+    candidates=models.SystemParam.objects.get(key='candidates')
+    candidates.strValue=''
+    candidates.save()
     print(global_state)
 
     models.Box.objects.update(password=None)
@@ -336,6 +342,7 @@ def authenticate(request):
     return_dict = {'success': result,
                    'info': info}
 
+    user = models.Users.objects.get(user_id=from_id)
     user.certificating_with = -1
     user.save()
     return HttpResponse(json.dumps(return_dict))

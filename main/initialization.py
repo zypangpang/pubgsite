@@ -49,7 +49,7 @@ def initialize_rank():
             user.rank = random.randint(1, 18)
         user.save()
     commander = models.SystemParam.objects.get(key='commander')
-    commander.strValuse = ''
+    commander.strValue = ''
     commander.save()
     candidates=models.SystemParam.objects.get(key='candidates')
     candidates.strValue = ''

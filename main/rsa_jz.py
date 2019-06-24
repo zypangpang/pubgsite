@@ -113,7 +113,7 @@ def merge_user_group(id1, id2):
     group1 = models.Users.objects.get(user_id=id1).group_id
     group2 = models.Users.objects.get(user_id=id2).group_id
     if group1 == group2:
-        return 1
+        return
     else:
         from_group = max(group1, group2)
         to_group = min(group1, group2)
